@@ -18,11 +18,13 @@ app.use(cors({
 
 // import route
 import hostregister from "./routes/host.route.js";
+import { errorHandler } from "./middleware/error.middleware.js";
 
 
 
 
 // route decleration
 app.use("/api/v1/host",hostregister);
+app.use(errorHandler);
 
 export {app};

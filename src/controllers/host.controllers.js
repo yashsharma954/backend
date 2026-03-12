@@ -219,11 +219,16 @@ const verifyotp=asyncHandler(async(req,res)=>{
         throw new ApiError(400, "Phone and OTP are required");
     }
 
+    if(otp.length!=6){
+        throw new ApiError(409,"invalid otp");
+    }
+
     const host = await Host.findOne({ phone });
 
     if (!host) {
         throw new ApiError(404, "Host not found");
     }
+
 
     // OTP match check
     if (host.otp != otp) {
@@ -240,8 +245,136 @@ const verifyotp=asyncHandler(async(req,res)=>{
     );
 });
 
+const resendotp=asyncHandler(async(req,res)=>{
+    const{phone}=req.body;
+    if(!phone){
+        new ApiError(400,"phone number is required");
+    }
+
+        const host = await Host.findOne({ phone });
+
+    if (!host) {
+        throw new ApiError(404, "Host not found");
+    }
+
+     const otp = Math.floor(100000 + Math.random() * 900000);
+
+    // save otp in database
+    host.otp = otp;
+    host.otpExpiry = Date.now() + 5 * 60 * 1000;
+    await host.save();
+
+      return res.status(200).json(
+        new ApiResponse(
+            200,
+            {
+                otp   // ⚠️ development ke liye
+            },
+            "OTP sent successfully"
+        )
+    );
+
+    
+
+});
+
+const resetpassword=asyncHandler(async(req,res)=>{
+    const{phone,password,confirm}=req.body;
+    if(!phone){
+        throw new ApiError(400,"phone number is required");
+    }
+    if(!password){
+        throw new ApiError(400,"password is required");
+    }
+    if(!confirm){
+        throw new ApiError(400,"confirm password is required");
+    }
+if(password !== confirm){
+    throw new ApiError(400,"password and confirm password do not match");
+}
+    const host =await Host.findOne({phone});
+    if(!host){
+        throw new ApiError(404,"host not found");
+    }
+    host.password=password;
+    host.otp = null;
+    host.otpExpiry = null;
+    await host.save();
+
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            {},
+            "password change succesfully"
+        )
+    )
+
+
+})
+
+
+const updateusername=asyncHandler(async(req,res)=>{
+    
+    const {username}=req.body;
+
+    if(!username){
+        throw new ApiError(400,"username required");
+    }
+    const host=await Host.findById(req.user._id);
+    if(!host){
+        throw new ApiError(404,"user not found");
+    }
+
+    host.username=username;
+    await host.save();
+    return res.status(200).json(
+        new ApiResponse(200,host,"username edit succesfully"));
+    
+
+
+
+});
+
+const updateprofile=asyncHandler(async(req,res)=>{
+    const avatarLocalPath = req.file?.path;
+
+  if (!avatarLocalPath) {
+    throw new ApiError(400, "Avatar file is required");
+  }
+
+  // cloudinary upload function
+  const avatar = await uploadOnCloudinary(avatarLocalPath);
+
+  if (!avatar.url) {
+    throw new ApiError(400, "Error while uploading avatar");
+  }
+
+  // user find from token
+  const host = await Host.findById(req.user._id);
+
+  if (!host) {
+    throw new ApiError(404, "Host not found");
+  }
+
+  // avatar update
+  host.avatar = avatar.url;
+
+  await host.save();
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      host,
+      "Profile picture updated successfully"
+    )
+  );
+});
 export {logouthost};
 export {loginhost};
 export {registerhost};
 export {sendotpbyphone};
 export {verifyotp};
+export {resendotp};
+export {resetpassword};
+export {updateusername};
+export {updateprofile};
