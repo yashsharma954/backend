@@ -16,6 +16,10 @@ const tournamentSchema=new mongoose.Schema({
       required: true,
       },
 
+      teamSize:{
+      type: Number,
+      required: true,
+      },
       currentTeams: {
        type: Number,
        default: 0,
@@ -61,7 +65,10 @@ const tournamentSchema=new mongoose.Schema({
                type: mongoose.Schema.Types.ObjectId,
                ref: "Host",
              },
-           
+           banner: {
+             type: String,
+             default: ""
+               },
              status: {
                type: String,
                enum: ["UPCOMING", "LIVE", "COMPLETED"],

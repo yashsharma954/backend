@@ -3,6 +3,7 @@ import {ApiError} from "../utilis/ApiError.js";
 import {ApiResponse} from "../utilis/ApiResponse.js";
 import { Host } from "../models/host.model.js";
 import {uploadOnCloudinary}  from "../utilis/cloudinary.js";
+import { Tournament } from "../models/tournament.model.js";
 
 const generateAccessAndRefereshTokens = async(userId) =>{
     try {
@@ -117,6 +118,7 @@ const loginhost=asyncHandler(async(req,res)=>{
        }
 
         const isPasswordValid = await host.isPasswordCorrect(password);
+        console.log("ispassword is ",isPasswordValid);
 
       if (!isPasswordValid) {
       throw new ApiError(401, "Invalid password");
@@ -304,7 +306,7 @@ if(password !== confirm){
     return res.status(200).json(
         new ApiResponse(
             200,
-            {},
+            host,
             "password change succesfully"
         )
     )
@@ -369,6 +371,151 @@ const updateprofile=asyncHandler(async(req,res)=>{
     )
   );
 });
+
+const createtournament=asyncHandler(async(req,res)=>{
+    const{title,game,startTime,endTime,prizePool,entryFee,maxTeams,matchType,teamSize,hostId}=req.body;
+    if(!title){
+        throw new ApiError(400,"title is required");
+    }
+    if(!game){
+        throw new ApiError(400,"game is required");
+    }
+    if(!startTime){
+        throw new ApiError(400,"startTime is required");
+    }
+    if(!endTime){
+        throw new ApiError(400,"endtime is required");
+    }
+    if(!prizePool){
+        throw new ApiError(400,"prizepool is required");
+    }
+    if(!entryFee){
+        throw new ApiError(400,"entryfee is required");
+    }
+    if(!maxTeams){
+        throw new ApiError(400,"maxteams is required");
+    }
+    if(!matchType){
+        throw new ApiError(400,"matchtype is required");
+    }
+    if(!teamSize){
+        throw new ApiError(400,"teamsize is required");
+    }
+    
+
+    const existedTournament = await Tournament.findOne({title});
+    if (existedTournament) {
+        throw new ApiError(409, "tournament is already exist");
+    }
+
+    let banner;
+    const bannerLocalPath = req.file?.path;
+    console.log("bannerLocalpath is ",bannerLocalPath);
+
+       if (bannerLocalPath) {
+          banner = await uploadOnCloudinary(bannerLocalPath)
+          console.log("avatar is ",banner.url);
+       }
+
+       const tournament = await Tournament.create({
+        title,
+        game,
+        banner: banner?.url || "",
+        startTime, 
+        endTime,
+        prizePool,
+        entryFee,
+        maxTeams,
+        matchType,
+        teamSize,
+        hostId  
+    })
+
+    const createdTournament = await Tournament.findById(tournament._id);
+    if (!createdTournament) {
+        throw new ApiError(500, "Something went wrong while registering the user")
+    }
+    return res.status(201).json(
+        new ApiResponse(200, createdTournament, "Host registered Successfully")
+    )
+});
+
+const getMyTournaments = asyncHandler(async (req, res) => {
+  const { status } = req.query;
+
+  const hostId = req.user._id;
+
+  const filter = {
+    hostId: hostId
+  };
+
+  if (status) {
+    filter.status = status;
+  }
+
+  const tournaments = await Tournament.find(filter)
+    .sort({ createdAt: -1 });
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      tournaments,
+      "Host tournaments fetched successfully"
+    )
+  );
+});
+
+const golive=asyncHandler(async(req,res)=>{
+
+    const{tournamentId}=req.body;
+    if(!tournamentId){
+        throw new ApiError(400,"tournamentid is required");
+    }
+    console.log("tournament id is ",tournamentId)
+
+    const tournament=await Tournament.findById(tournamentId);
+    if(!tournament){
+        throw new ApiError(404,"tournament not found");
+    }
+    tournament.status="LIVE";
+    await tournament.save();
+    return res.status(201).json(
+        new ApiResponse(
+            200,
+            tournament,
+            "tournament is live"
+        )
+    )
+        
+});
+
+const endlive=asyncHandler(async(req,res)=>{
+
+    const{tournamentId}=req.body;
+    if(!tournamentId){
+        throw new ApiError(400,"tournamentid is required");
+    }
+    console.log("tournament id is ",tournamentId)
+
+    const tournament=await Tournament.findById(tournamentId);
+    if(!tournament){
+        throw new ApiError(404,"tournament not found");
+    }
+    tournament.status="COMPLETED";
+    await tournament.save();
+    return res.status(201).json(
+        new ApiResponse(
+            200,
+            tournament,
+            "tournament is completed"
+        )
+    )
+        
+});
+
+
+
+
 export {logouthost};
 export {loginhost};
 export {registerhost};
@@ -378,3 +525,7 @@ export {resendotp};
 export {resetpassword};
 export {updateusername};
 export {updateprofile};
+export {createtournament};
+export {getMyTournaments};
+export {golive};
+export {endlive};
