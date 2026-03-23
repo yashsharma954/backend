@@ -7,9 +7,9 @@ const playerSchema = new mongoose.Schema(
     required: true,
   },
 
-  avatar: {
+  teamname:{
     type: String,
-    default: "",
+   
   },
 
   // OTP verification
@@ -26,12 +26,25 @@ const playerSchema = new mongoose.Schema(
     type: Date,
   },
 
-  // optional tracking
+  
   tournamentsJoined: [
     {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Tournament",
     },
+  ],
+ 
+  teamimage:{
+    type : String,
+    default:""
+  },
+
+  teammates: [
+    {
+      ingameName: {
+      type: String,
+      },
+    }
   ],
 },
 {

@@ -80,11 +80,6 @@ const tournamentSchema=new mongoose.Schema({
           default: ""
                }
 
-
-
-
-
-
 },{
     timestamps:true
 });
