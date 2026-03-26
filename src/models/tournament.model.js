@@ -69,6 +69,10 @@ const tournamentSchema=new mongoose.Schema({
              type: String,
              default: ""
                },
+               leaderboard:{
+               type : String,
+               default: ""
+               },
              status: {
                type: String,
                enum: ["UPCOMING", "LIVE", "COMPLETED"],

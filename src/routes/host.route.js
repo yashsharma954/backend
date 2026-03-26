@@ -15,6 +15,8 @@ import {getMyTournaments} from "../controllers/host.controllers.js";
 import {golive} from "../controllers/host.controllers.js";
 import {endlive} from "../controllers/host.controllers.js";
 import { liveroom } from "../controllers/host.controllers.js";
+import {uploadleaderboard} from "../controllers/host.controllers.js";
+import {result} from "../controllers/host.controllers.js"
 
 
 
@@ -41,6 +43,15 @@ router.route("/tournaments/my").get(verifyJWT, getMyTournaments);
 router.route("/tournaments/golive").post(golive);
 router.route("/tournaments/end").post(endlive);
 router.route("/tournaments/liveroom/:id").get(liveroom);
+router.route("/uploadleaderboard").post( upload.fields([
+        {
+            name: "leaderboard",
+            maxCount: 1
+        }, 
+    ]),
+    uploadleaderboard);
+
+router.route("/result/:id").get(result);
 
 
 

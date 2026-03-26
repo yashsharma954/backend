@@ -544,6 +544,62 @@ const liveroom=asyncHandler(async(req,res)=>{
 
 });
 
+const uploadleaderboard=asyncHandler(async(req,res)=>{
+
+    const {tournamentId}=req.body;
+    if(!tournamentId){
+        throw new ApiError(400,"id is required");
+    }
+    const tournament= await Tournament.findById(tournamentId);
+
+    let leaderboard;
+    const uploadleaderboardLocalPath = req.files?.leaderboard?.[0]?.path;
+    console.log("avatarLocalpath is ",uploadleaderboard);
+
+       if (uploadleaderboard) {
+          leaderboard = await uploadOnCloudinary(uploadleaderboardLocalPath)
+          console.log("avatar is ",leaderboard.url);
+       }
+
+       tournament.leaderboard=leaderboard?.url || "";
+       await tournament.save();
+
+        return res.status(200).json(
+        new ApiResponse(
+            200,
+            {
+                tournament  // ⚠️ development ke liye
+            },
+            "leaderboard upload succesfully"
+        )
+    );
+   
+
+});
+
+const result=asyncHandler(async(req,res)=>{
+
+     const {id}=req.params;
+
+  if(!id){
+    throw new ApiError(400,"id is required");
+  }
+  const tournament = await Tournament.findById(id);
+
+  if (!tournament) {
+    throw new ApiError(404, "Tournament not found");
+  }
+
+  // ✅ response
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      tournament,
+      "Tournament fetched successfully"
+    )
+  );
+})
+
 
 
 
@@ -561,3 +617,5 @@ export {getMyTournaments};
 export {golive};
 export {endlive};
 export {liveroom};
+export {uploadleaderboard};
+export {result};
