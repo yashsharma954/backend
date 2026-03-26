@@ -467,9 +467,15 @@ const getMyTournaments = asyncHandler(async (req, res) => {
 
 const golive=asyncHandler(async(req,res)=>{
 
-    const{tournamentId}=req.body;
-    if(!tournamentId){
+    const{tournamentId,roomId,roomPassword}=req.body;
+    if(!tournamentId ){
         throw new ApiError(400,"tournamentid is required");
+    }
+    if(!roomId){
+        throw new ApiError(400,"roomid is required");
+    }
+    if(!roomPassword){
+        throw new ApiError(400,"roompassword is required");
     }
     console.log("tournament id is ",tournamentId)
 
@@ -478,6 +484,8 @@ const golive=asyncHandler(async(req,res)=>{
         throw new ApiError(404,"tournament not found");
     }
     tournament.status="LIVE";
+    tournament.roomId=roomId;
+    tournament.roompassword=roomPassword;
     await tournament.save();
     return res.status(201).json(
         new ApiResponse(
@@ -513,6 +521,29 @@ const endlive=asyncHandler(async(req,res)=>{
         
 });
 
+const liveroom=asyncHandler(async(req,res)=>{
+  const {id}=req.params;
+
+  if(!id){
+    throw new ApiError(400,"id is required");
+  }
+  const tournament = await Tournament.findById(id);
+
+  if (!tournament) {
+    throw new ApiError(404, "Tournament not found");
+  }
+
+  // ✅ response
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      tournament,
+      "Tournament fetched successfully"
+    )
+  );
+
+});
+
 
 
 
@@ -529,3 +560,4 @@ export {createtournament};
 export {getMyTournaments};
 export {golive};
 export {endlive};
+export {liveroom};

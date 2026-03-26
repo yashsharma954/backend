@@ -74,7 +74,14 @@ const tournamentSchema=new mongoose.Schema({
                enum: ["UPCOMING", "LIVE", "COMPLETED"],
                default: "UPCOMING",
              },
-
+            roomId:{
+               type: String,
+               default:""
+            },
+            roompassword:{
+              type: String,
+              default:""
+            },
              streamLink: {
            type: String,
           default: ""
