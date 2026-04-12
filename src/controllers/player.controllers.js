@@ -5,6 +5,7 @@ import { Tournament } from "../models/tournament.model.js";
 import {uploadOnCloudinary}  from "../utilis/cloudinary.js";
 import { Host } from "../models/host.model.js";
 import { Player } from "../models/player.model.js";
+import { threadCpuUsage } from "process";
 
 const getTournament=asyncHandler(async(req,res)=>{
     const { status, game } = req.query;
@@ -197,9 +198,40 @@ const join=asyncHandler(async(req,res)=>{
 });
 
 
+const search = asyncHandler(async (req, res) => {
+  const { username, game, status } = req.body;
+
+  if (!username) {
+    throw new ApiError(400, "username is required");
+  }
+
+  const hosts = await Host.find({
+    username: { $regex: username, $options: "i" },
+  });
+
+  if (hosts.length === 0) {
+    return res.status(200).json(
+      new ApiResponse(200, [], "No host found")
+    );
+  }
+
+  const hostIds = hosts.map(h => h._id);
+
+  const tournaments = await Tournament.find({
+    hostId: { $in: hostIds },
+    game: game,
+    status: status,
+  }).populate("hostId");
+
+  return res.status(200).json(
+    new ApiResponse(200, tournaments, "Filtered tournaments")
+  );
+});
+
 export {getTournament};
 export {sendotp};
 export {verify};
 export {resendotp};
 export {tournament};
 export {join};
+export {search};

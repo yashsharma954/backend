@@ -56,9 +56,9 @@ const tournamentSchema=new mongoose.Schema({
 
         startTime: { type: Date, required: true },
 
-     endTime: {
+        endTime: {
             type: Date,
-        required: true,
+          required: true,
            },
 
            hostId: {
@@ -73,6 +73,25 @@ const tournamentSchema=new mongoose.Schema({
                type : String,
                default: ""
                },
+             leaderboardtable: [
+                      {
+                       teamId:{
+                       type:String,
+                        } ,
+                       teamName:{
+                         type: String,
+                          },
+                      rank: {
+                       type:Number
+                           },
+                        prize:
+                       {
+                         type:Number,
+                           },
+                        }
+                ],
+               
+
              status: {
                type: String,
                enum: ["UPCOMING", "LIVE", "COMPLETED"],

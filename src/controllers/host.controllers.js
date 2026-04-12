@@ -4,6 +4,7 @@ import {ApiResponse} from "../utilis/ApiResponse.js";
 import { Host } from "../models/host.model.js";
 import {uploadOnCloudinary}  from "../utilis/cloudinary.js";
 import { Tournament } from "../models/tournament.model.js";
+import { Team } from "../models/team.model.js";
 
 const generateAccessAndRefereshTokens = async(userId) =>{
     try {
@@ -544,37 +545,128 @@ const liveroom=asyncHandler(async(req,res)=>{
 
 });
 
-const uploadleaderboard=asyncHandler(async(req,res)=>{
+// const uploadleaderboard=asyncHandler(async(req,res)=>{
 
-    const {tournamentId}=req.body;
-    if(!tournamentId){
-        throw new ApiError(400,"id is required");
-    }
-    const tournament= await Tournament.findById(tournamentId);
+//     const {tournamentId,leaderboardData}=req.body;
+//     if(!tournamentId){
+//         throw new ApiError(400,"id is required");
+//     }
+//     const tournament= await Tournament.findById(tournamentId);
 
-    let leaderboard;
-    const uploadleaderboardLocalPath = req.files?.leaderboard?.[0]?.path;
-    console.log("avatarLocalpath is ",uploadleaderboard);
+//      let leaderboardparsed= [];
+//   if (req.body.leaderboardData) {
+//     leaderboardparsed = JSON.parse(req.body.leaderboardData);
+//   }
 
-       if (uploadleaderboard) {
-          leaderboard = await uploadOnCloudinary(uploadleaderboardLocalPath)
-          console.log("avatar is ",leaderboard.url);
-       }
+//     let leaderboard;
+//     const uploadleaderboardLocalPath = req.files?.leaderboard?.[0]?.path;
+//     console.log("avatarLocalpath is ",uploadleaderboard);
 
-       tournament.leaderboard=leaderboard?.url || "";
-       await tournament.save();
+//        if (uploadleaderboard) {
+//           leaderboard = await uploadOnCloudinary(uploadleaderboardLocalPath)
+//           console.log("avatar is ",leaderboard.url);
+//        }
 
-        return res.status(200).json(
-        new ApiResponse(
-            200,
-            {
-                tournament  // ⚠️ development ke liye
-            },
-            "leaderboard upload succesfully"
-        )
-    );
+//        tournament.leaderboard=leaderboard?.url || "";
+
+//         const createdTeams = [];
+
+//   for (let team of leaderboardparsed) {
+//     const newTeam = await Team.create({
+//       name: team.teamName,
+//       rank: team.rank,
+//       prize: team.prize,
+//          tournamentId: tournamentId,
+//          });
+
+//         createdTeams.push(newTeam._id);
+//          }
+
+//          tournament.leaderboardtable=createdTeams;
+
+      
+//        await tournament.save();
+
+//         return res.status(200).json(
+//         new ApiResponse(
+//             200,
+//             {
+//                 tournament  // ⚠️ development ke liye
+//             },
+//             "leaderboard upload succesfully"
+//         )
+//     );
    
 
+// });
+
+const uploadleaderboard = asyncHandler(async (req, res) => {
+  const { tournamentId, leaderboardData } = req.body;
+
+  if (!tournamentId) {
+    throw new ApiError(400, "tournamentId is required");
+  }
+
+  const parsed = JSON.parse(leaderboardData);
+
+  const tournament = await Tournament.findById(tournamentId);
+
+  if (!tournament) {
+    throw new ApiError(404, "Tournament not found");
+  }
+
+  let leaderboard;
+    const leaderboardLocalPath = req.files?.leaderboard?.[0]?.path;
+    console.log("leaderboardLocalpath is ",leaderboardLocalPath);
+
+       if (leaderboardLocalPath) {
+          leaderboard= await uploadOnCloudinary(leaderboardLocalPath)
+          console.log("avatar is ",leaderboard.url);
+       }
+  const leaderboardtable = [];
+
+  for (let team of parsed) {
+    // 🔍 match team from tournament.players
+    console.log("🔍 Searching for:", team.teamName);
+    const matchedTeam = tournament.players.find(
+      (t) =>
+        t.teamName?.toLowerCase().trim() ===
+        team.teamName.toLowerCase().trim()
+    );
+
+    if (!matchedTeam) {
+        throw new ApiError(404,"team not found");
+      console.log("❌ Team not found:", team.teamName);
+      continue; // skip invalid team
+    
+    }
+
+    // 🧠 teamId kya hoga?
+    // 👉 agar team ka _id hai to use karo
+    // 👉 warna first member ka playerId use kar sakte ho (temporary solution)
+
+   const teamId = matchedTeam._id;
+    console.log("team id is ",teamId);
+
+    leaderboardtable.push({
+      teamId,
+      teamName:(team.teamName),
+      rank: Number(team.rank),
+      prize: Number(team.prize),
+    });
+  }
+
+  // 💾 save leaderboard
+  tournament.leaderboardtable = leaderboardtable;
+  tournament.leaderboard = leaderboard?.url || "";
+
+  await tournament.save();
+
+  return res.status(200).json({
+    success: true,
+    message: "Leaderboard saved successfully",
+    tournament,
+  });
 });
 
 const result=asyncHandler(async(req,res)=>{
