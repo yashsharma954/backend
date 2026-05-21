@@ -458,6 +458,24 @@ const createtournament = asyncHandler(async (req, res) => {
         map
     } = req.body;
 
+    // if (typeof rounds === "string") {
+    //     try {
+    //         rounds = JSON.parse(rounds);
+    //     } catch (error) {
+    //         throw new ApiError(400, "Invalid rounds data format");
+    //     }
+    // }
+
+    // Parse rounds if sent as string
+if (typeof req.body.rounds === "string") {
+  try {
+    req.body.rounds = JSON.parse(req.body.rounds);
+  } catch (error) {
+    console.error("Rounds Parse Error:", error);
+    throw new ApiError(400, "Invalid rounds data");
+  }
+}
+
     // ==================== Validation ====================
     if (!title) throw new ApiError(400, "Title is required");
     if (!game) throw new ApiError(400, "Game is required");
@@ -475,10 +493,12 @@ const createtournament = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Total rounds is required and must be at least 1");
     }
 
-    if (!rounds || !Array.isArray(rounds) || rounds.length === 0) {
-        throw new ApiError(400, "Rounds array is required");
-    }
-
+    // if (!rounds || !Array.isArray(rounds) || rounds.length === 0) {
+    //     throw new ApiError(400, "Rounds array is required");
+    // }
+      if (!req.body.rounds || !Array.isArray(req.body.rounds) || req.body.rounds.length === 0) {
+    throw new ApiError(400, "rounds array is required");
+}
     if (rounds.length !== totalRounds) {
         throw new ApiError(400, "Total rounds and rounds array length must match");
     }
