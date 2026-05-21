@@ -499,7 +499,7 @@ if (typeof req.body.rounds === "string") {
       if (!req.body.rounds || !Array.isArray(req.body.rounds) || req.body.rounds.length === 0) {
     throw new ApiError(400, "rounds array is required");
 }
-    if (rounds.length !== totalRounds) {
+    if (req.body.rounds.length !== totalRounds) {
         throw new ApiError(400, "Total rounds and rounds array length must match");
     }
 
