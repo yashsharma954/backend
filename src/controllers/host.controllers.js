@@ -498,29 +498,43 @@ const getMyTournaments = asyncHandler(async (req, res) => {
   );
 });
 
-const golive=asyncHandler(async(req,res)=>{
+const golive = asyncHandler(async (req, res) => {
+  const { tournamentId } = req.body;
 
-    const{tournamentId}=req.body;
-    if(!tournamentId ){
-        throw new ApiError(400,"tournamentid is required");
-    }
-    
-    console.log("tournament id is ",tournamentId)
+  if (!tournamentId) {
+    throw new ApiError(400, "tournamentId is required");
+  }
 
-    const tournament=await Tournament.findById(tournamentId);
-    if(!tournament){
-        throw new ApiError(404,"tournament not found");
-    }
-    tournament.status="LIVE";
-    await tournament.save();
-    return res.status(201).json(
-        new ApiResponse(
-            200,
-            tournament,
-            "tournament is live"
-        )
+  // Find tournament and check ownership
+  const tournament = await Tournament.findById(tournamentId);
+
+  if (!tournament) {
+    throw new ApiError(404, "Tournament not found");
+  }
+
+  // Security Check: Only host can make it live
+  if (tournament.hostId.toString() !== req.user.id) {   // assuming req.user from auth middleware
+    throw new ApiError(403, "You are not authorized to start this tournament");
+  }
+
+  // Check if already live
+  if (tournament.status === "LIVE") {
+    throw new ApiError(400, "Tournament is already LIVE");
+  }
+
+  // Update status
+  tournament.status = "LIVE";
+  tournament.updatedAt = new Date();   // optional
+
+  await tournament.save();
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      tournament,
+      "Tournament is now LIVE successfully"
     )
-        
+  );
 });
 
 const endlive=asyncHandler(async(req,res)=>{
