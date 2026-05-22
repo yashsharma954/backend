@@ -40,7 +40,7 @@ router.route("/updateusername").put(verifyJWT,updateusername);
 router.route("/updateprofile").put(upload.single("avatar"),verifyJWT,updateprofile);
 router.route("/tournaments").post(upload.single("banner"),createtournament);
 router.route("/tournaments/my").get(verifyJWT, getMyTournaments);
-router.route("/tournaments/golive").post(verifyJWT,golive);
+router.route("/tournaments/golive").post(golive);
 router.route("/tournaments/end").post(endlive);
 router.route("/tournaments/liveroom/:id").get(liveroom);
 router.route("/uploadleaderboard").post( upload.fields([

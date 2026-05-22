@@ -512,23 +512,23 @@ const golive = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Tournament not found");
   }
 
-  if (!req.user || !req.user.id) {
-    throw new ApiError(401, "Unauthorized - Please login again");
-  }
+//   if (!req.user || !req.user.id) {
+//     throw new ApiError(401, "Unauthorized - Please login again");
+//   }
 
-  // Security Check: Only host can make it live
-  if (tournament.hostId.toString() !== req.user.id) {   // assuming req.user from auth middleware
-    throw new ApiError(403, "You are not authorized to start this tournament");
-  }
+//   // Security Check: Only host can make it live
+//   if (tournament.hostId.toString() !== req.user.id) {   // assuming req.user from auth middleware
+//     throw new ApiError(403, "You are not authorized to start this tournament");
+//   }
 
-  // Check if already live
-  if (tournament.status === "LIVE") {
-    throw new ApiError(400, "Tournament is already LIVE");
-  }
+//   // Check if already live
+//   if (tournament.status === "LIVE") {
+//     throw new ApiError(400, "Tournament is already LIVE");
+//   }
 
   // Update status
   tournament.status = "LIVE";
-  tournament.updatedAt = new Date();   // optional
+    // optional
 
   await tournament.save();
 
