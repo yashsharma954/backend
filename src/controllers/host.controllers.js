@@ -574,6 +574,15 @@ const createtournament = asyncHandler(async (req, res) => {
             throw new ApiError(400, "Invalid rounds data format");
         }
     }
+    // Rounds mein totalMatches automatically calculate karo
+     const processedRounds = rounds.map((round) => ({
+    roundNumber: round.roundNumber,
+    name: round.name,
+    teamsPerMatch: Number(round.teamsPerMatch),
+    qualifyingTeams: Number(round.qualifyingTeams),
+    totalMatches: Math.ceil(Number(maxTeams) / Number(round.teamsPerMatch)), // Auto calculate
+    status: "upcoming"
+   }));
 
     const {
         title,
@@ -631,7 +640,7 @@ const createtournament = asyncHandler(async (req, res) => {
         teamSize: Number(teamSize),
         maxTeams: Number(maxTeams),
         totalRounds: Number(totalRounds),
-        rounds,                    // ← Parsed array
+        rounds: processedRounds,                   // ← Parsed array
         prizePool: Number(prizePool),
         entryFee: Number(entryFee),
         startTime,
