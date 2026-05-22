@@ -500,16 +500,11 @@ const getMyTournaments = asyncHandler(async (req, res) => {
 
 const golive=asyncHandler(async(req,res)=>{
 
-    const{tournamentId,roomId,roomPassword}=req.body;
+    const{tournamentId}=req.body;
     if(!tournamentId ){
         throw new ApiError(400,"tournamentid is required");
     }
-    if(!roomId){
-        throw new ApiError(400,"roomid is required");
-    }
-    if(!roomPassword){
-        throw new ApiError(400,"roompassword is required");
-    }
+    
     console.log("tournament id is ",tournamentId)
 
     const tournament=await Tournament.findById(tournamentId);
@@ -517,8 +512,6 @@ const golive=asyncHandler(async(req,res)=>{
         throw new ApiError(404,"tournament not found");
     }
     tournament.status="LIVE";
-    tournament.roomId=roomId;
-    tournament.roompassword=roomPassword;
     await tournament.save();
     return res.status(201).json(
         new ApiResponse(
