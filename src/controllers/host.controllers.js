@@ -499,8 +499,12 @@ if (typeof req.body.rounds === "string") {
       if (!req.body.rounds || !Array.isArray(req.body.rounds) || req.body.rounds.length === 0) {
     throw new ApiError(400, "rounds array is required");
 }
-    if (req.body.rounds.length !== totalRounds) {
-        throw new ApiError(400, "Total rounds and rounds array length must match");
+    // if (req.body.rounds.length !== totalRounds) {
+    //     throw new ApiError(400, "Total rounds and rounds array length must match");
+    // }
+    if (Number(totalRounds) !== roundsData.length) {
+        console.log("totalRounds:", totalRounds, "rounds length:", roundsData.length);
+        throw new ApiError(400, `Total rounds (${totalRounds}) and rounds array length (${roundsData.length}) must match`);
     }
 
     // Validate each round
