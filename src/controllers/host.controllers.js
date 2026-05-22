@@ -575,15 +575,7 @@ const createtournament = asyncHandler(async (req, res) => {
         }
     }
     // Rounds mein totalMatches automatically calculate karo
-     const processedRounds = rounds.map((round) => ({
-    roundNumber: round.roundNumber,
-    name: round.name,
-    teamsPerMatch: Number(round.teamsPerMatch),
-    qualifyingTeams: Number(round.qualifyingTeams),
-    totalMatches: Math.ceil(Number(maxTeams) / Number(round.teamsPerMatch)), // Auto calculate
-    status: "upcoming"
-   }));
-
+   
     const {
         title,
         game,
@@ -631,6 +623,16 @@ const createtournament = asyncHandler(async (req, res) => {
     if (bannerLocalPath) {
         banner = await uploadOnCloudinary(bannerLocalPath);
     }
+
+      const processedRounds = rounds.map((round) => ({
+    roundNumber: round.roundNumber,
+    name: round.name,
+    teamsPerMatch: Number(round.teamsPerMatch),
+    qualifyingTeams: Number(round.qualifyingTeams),
+    totalMatches: Math.ceil(Number(maxTeams) / Number(round.teamsPerMatch)), // Auto calculate
+    status: "upcoming"
+   }));
+
 
     // ==================== Create Tournament ====================
     const tournament = await Tournament.create({
