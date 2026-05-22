@@ -441,7 +441,140 @@ const updateprofile=asyncHandler(async(req,res)=>{
 //     )
 // });
 
+// const createtournament = asyncHandler(async (req, res) => {
+//     const {
+//         title,
+//         game,
+//         startTime,
+//         endTime,
+//         prizePool,
+//         entryFee,
+//         maxTeams,
+//         matchType,
+//         teamSize,
+//         totalRounds,           // ← New
+//         rounds,                // ← New (Array of rounds)
+//         hostId,
+//         map
+//     } = req.body;
+
+//     // if (typeof rounds === "string") {
+//     //     try {
+//     //         rounds = JSON.parse(rounds);
+//     //     } catch (error) {
+//     //         throw new ApiError(400, "Invalid rounds data format");
+//     //     }
+//     // }
+
+//     // Parse rounds if sent as string
+// if (typeof req.body.rounds === "string") {
+//   try {
+//     req.body.rounds = JSON.parse(req.body.rounds);
+//   } catch (error) {
+//     console.error("Rounds Parse Error:", error);
+//     throw new ApiError(400, "Invalid rounds data");
+//   }
+// }
+
+//     // ==================== Validation ====================
+//     if (!title) throw new ApiError(400, "Title is required");
+//     if (!game) throw new ApiError(400, "Game is required");
+//     if (!startTime) throw new ApiError(400, "Start time is required");
+//     if (!endTime) throw new ApiError(400, "End time is required");
+//     if (!prizePool) throw new ApiError(400, "Prize pool is required");
+//     if (!entryFee) throw new ApiError(400, "Entry fee is required");
+//     if (!maxTeams) throw new ApiError(400, "Maximum teams is required");
+//     if (!matchType) throw new ApiError(400, "Match type is required");
+//     if (!teamSize) throw new ApiError(400, "Team size is required");
+//     if (!hostId) throw new ApiError(400, "Host ID is required");
+
+//     // Multi-Round Validation
+//     if (!totalRounds || totalRounds < 1) {
+//         throw new ApiError(400, "Total rounds is required and must be at least 1");
+//     }
+
+//     // if (!rounds || !Array.isArray(rounds) || rounds.length === 0) {
+//     //     throw new ApiError(400, "Rounds array is required");
+//     // }
+//       if (!req.body.rounds || !Array.isArray(req.body.rounds) || req.body.rounds.length === 0) {
+//     throw new ApiError(400, "rounds array is required");
+// }
+//     // if (req.body.rounds.length !== totalRounds) {
+//     //     throw new ApiError(400, "Total rounds and rounds array length must match");
+//     // }
+//     if (Number(totalRounds) !== roundsData.length) {
+//         console.log("totalRounds:", totalRounds, "rounds length:", roundsData.length);
+//         throw new ApiError(400, `Total rounds (${totalRounds}) and rounds array length (${roundsData.length}) must match`);
+//     }
+
+//     // Validate each round
+//     for (let i = 0; i < rounds.length; i++) {
+//         const round = rounds[i];
+//         if (!round.name || !round.teamsPerMatch || !round.qualifyingTeams) {
+//             throw new ApiError(400, `Invalid data in round ${round.roundNumber || i + 1}`);
+//         }
+//     }
+
+//     // Check if tournament with same title already exists
+//     const existedTournament = await Tournament.findOne({ title });
+//     if (existedTournament) {
+//         throw new ApiError(409, "Tournament with this title already exists");
+//     }
+
+//     // ==================== Banner Upload ====================
+//     let bannerUrl = "";
+//     const bannerLocalPath = req.file?.path;
+
+//     if (bannerLocalPath) {
+//         const banner = await uploadOnCloudinary(bannerLocalPath);
+//         bannerUrl = banner?.url || "";
+//     }
+
+//     // ==================== Create Tournament ====================
+//     const tournament = await Tournament.create({
+//         title: title.trim(),
+//         game: game.toUpperCase(),
+//         matchType,
+//         teamSize,
+//         maxTeams: Number(maxTeams),
+//         totalRounds: Number(totalRounds),
+//         rounds,                    // Full rounds array
+//         prizePool: Number(prizePool),
+//         entryFee: Number(entryFee),
+//         startTime,
+//         endTime,
+//         hostId,
+//         banner: bannerUrl,
+//         map: map || "",
+//         status: "UPCOMING"
+//     });
+
+//     const createdTournament = await Tournament.findById(tournament._id)
+//         .populate("hostId", "name username");
+
+//     if (!createdTournament) {
+//         throw new ApiError(500, "Something went wrong while creating tournament");
+//     }
+
+//     return res.status(201).json(
+//         new ApiResponse(201, createdTournament, "Tournament created successfully with multi-round system")
+//     );
+// });
+
 const createtournament = asyncHandler(async (req, res) => {
+    
+    // 🔥 ROUNDS PARSING - Sabse Pehle Yeh Karo
+    let rounds = req.body.rounds;
+
+    if (typeof rounds === "string") {
+        try {
+            rounds = JSON.parse(rounds);
+        } catch (error) {
+            console.error("Rounds Parse Error:", error);
+            throw new ApiError(400, "Invalid rounds data format");
+        }
+    }
+
     const {
         title,
         game,
@@ -452,82 +585,42 @@ const createtournament = asyncHandler(async (req, res) => {
         maxTeams,
         matchType,
         teamSize,
-        totalRounds,           // ← New
-        rounds,                // ← New (Array of rounds)
+        totalRounds,
         hostId,
         map
     } = req.body;
 
-    // if (typeof rounds === "string") {
-    //     try {
-    //         rounds = JSON.parse(rounds);
-    //     } catch (error) {
-    //         throw new ApiError(400, "Invalid rounds data format");
-    //     }
-    // }
-
-    // Parse rounds if sent as string
-if (typeof req.body.rounds === "string") {
-  try {
-    req.body.rounds = JSON.parse(req.body.rounds);
-  } catch (error) {
-    console.error("Rounds Parse Error:", error);
-    throw new ApiError(400, "Invalid rounds data");
-  }
-}
-
     // ==================== Validation ====================
-    if (!title) throw new ApiError(400, "Title is required");
-    if (!game) throw new ApiError(400, "Game is required");
-    if (!startTime) throw new ApiError(400, "Start time is required");
-    if (!endTime) throw new ApiError(400, "End time is required");
-    if (!prizePool) throw new ApiError(400, "Prize pool is required");
-    if (!entryFee) throw new ApiError(400, "Entry fee is required");
-    if (!maxTeams) throw new ApiError(400, "Maximum teams is required");
-    if (!matchType) throw new ApiError(400, "Match type is required");
-    if (!teamSize) throw new ApiError(400, "Team size is required");
-    if (!hostId) throw new ApiError(400, "Host ID is required");
+    if (!title) throw new ApiError(400, "title is required");
+    if (!game) throw new ApiError(400, "game is required");
+    if (!startTime) throw new ApiError(400, "startTime is required");
+    if (!endTime) throw new ApiError(400, "endTime is required");
+    if (!prizePool) throw new ApiError(400, "prizepool is required");
+    if (!entryFee) throw new ApiError(400, "entryfee is required");
+    if (!maxTeams) throw new ApiError(400, "maxteams is required");
+    if (!matchType) throw new ApiError(400, "matchtype is required");
+    if (!teamSize) throw new ApiError(400, "teamsize is required");
+    if (!hostId) throw new ApiError(400, "hostId is required");
 
-    // Multi-Round Validation
-    if (!totalRounds || totalRounds < 1) {
-        throw new ApiError(400, "Total rounds is required and must be at least 1");
+    if (!totalRounds) throw new ApiError(400, "totalRounds is required");
+
+    // Important Check
+    if (!rounds || !Array.isArray(rounds) || rounds.length === 0) {
+        console.log("Received rounds:", req.body.rounds);
+        throw new ApiError(400, "rounds array is required");
     }
 
-    // if (!rounds || !Array.isArray(rounds) || rounds.length === 0) {
-    //     throw new ApiError(400, "Rounds array is required");
-    // }
-      if (!req.body.rounds || !Array.isArray(req.body.rounds) || req.body.rounds.length === 0) {
-    throw new ApiError(400, "rounds array is required");
-}
-    // if (req.body.rounds.length !== totalRounds) {
-    //     throw new ApiError(400, "Total rounds and rounds array length must match");
-    // }
-    if (Number(totalRounds) !== roundsData.length) {
-        console.log("totalRounds:", totalRounds, "rounds length:", roundsData.length);
-        throw new ApiError(400, `Total rounds (${totalRounds}) and rounds array length (${roundsData.length}) must match`);
-    }
-
-    // Validate each round
-    for (let i = 0; i < rounds.length; i++) {
-        const round = rounds[i];
-        if (!round.name || !round.teamsPerMatch || !round.qualifyingTeams) {
-            throw new ApiError(400, `Invalid data in round ${round.roundNumber || i + 1}`);
-        }
-    }
-
-    // Check if tournament with same title already exists
-    const existedTournament = await Tournament.findOne({ title });
-    if (existedTournament) {
-        throw new ApiError(409, "Tournament with this title already exists");
+    if (Number(totalRounds) !== rounds.length) {
+        console.log("Mismatch - totalRounds:", totalRounds, " | rounds length:", rounds.length);
+        throw new ApiError(400, `Total rounds (${totalRounds}) and rounds array length (${rounds.length}) must match`);
     }
 
     // ==================== Banner Upload ====================
-    let bannerUrl = "";
+    let banner = { url: "" };
     const bannerLocalPath = req.file?.path;
 
     if (bannerLocalPath) {
-        const banner = await uploadOnCloudinary(bannerLocalPath);
-        bannerUrl = banner?.url || "";
+        banner = await uploadOnCloudinary(bannerLocalPath);
     }
 
     // ==================== Create Tournament ====================
@@ -535,26 +628,21 @@ if (typeof req.body.rounds === "string") {
         title: title.trim(),
         game: game.toUpperCase(),
         matchType,
-        teamSize,
+        teamSize: Number(teamSize),
         maxTeams: Number(maxTeams),
         totalRounds: Number(totalRounds),
-        rounds,                    // Full rounds array
+        rounds,                    // ← Parsed array
         prizePool: Number(prizePool),
         entryFee: Number(entryFee),
         startTime,
         endTime,
         hostId,
-        banner: bannerUrl,
+        banner: banner?.url || "",
         map: map || "",
         status: "UPCOMING"
     });
 
-    const createdTournament = await Tournament.findById(tournament._id)
-        .populate("hostId", "name username");
-
-    if (!createdTournament) {
-        throw new ApiError(500, "Something went wrong while creating tournament");
-    }
+    const createdTournament = await Tournament.findById(tournament._id);
 
     return res.status(201).json(
         new ApiResponse(201, createdTournament, "Tournament created successfully with multi-round system")
