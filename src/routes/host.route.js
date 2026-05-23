@@ -54,7 +54,7 @@ router.route("/uploadleaderboard").post( upload.fields([
 
 router.route("/result/:id").get(result);
 // Existing routes ke saath add kar do
-router.route("/tournaments/:tournamentId/round/:roundNumber").get(verifyJWT, getRoundDetails);
+router.route("/tournaments/:tournamentId/round/:roundNumber").get(getRoundDetails);
 
 
 
