@@ -735,6 +735,51 @@ const result=asyncHandler(async(req,res)=>{
   );
 })
 
+// ==================== getRoundDetails Controller ====================
+
+const getRoundDetails = asyncHandler(async (req, res) => {
+    const { tournamentId, roundNumber } = req.params;
+
+    if (!tournamentId) {
+        throw new ApiError(400, "Tournament ID is required");
+    }
+
+    if (!roundNumber) {
+        throw new ApiError(400, "Round Number is required");
+    }
+
+    // Find tournament
+    const tournament = await Tournament.findById(tournamentId);
+
+    if (!tournament) {
+        throw new ApiError(404, "Tournament not found");
+    }
+
+    // Find specific round
+    const round = tournament.rounds.find(
+        r => r.roundNumber === Number(roundNumber)
+    );
+
+    if (!round) {
+        throw new ApiError(404, `Round ${roundNumber} not found`);
+    }
+
+    // ✅ Response with round + matches
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            {
+                round: round,
+                tournamentId: tournament._id,
+                tournamentTitle: tournament.title
+            },
+            `Round ${roundNumber} fetched successfully`
+        )
+    );
+});
+
+
+
 
 
 
@@ -754,3 +799,4 @@ export {endlive};
 export {liveroom};
 export {uploadleaderboard};
 export {result};
+export { getRoundDetails };

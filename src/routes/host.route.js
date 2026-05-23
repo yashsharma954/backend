@@ -16,7 +16,8 @@ import {golive} from "../controllers/host.controllers.js";
 import {endlive} from "../controllers/host.controllers.js";
 import { liveroom } from "../controllers/host.controllers.js";
 import {uploadleaderboard} from "../controllers/host.controllers.js";
-import {result} from "../controllers/host.controllers.js"
+import {result} from "../controllers/host.controllers.js";
+import { getRoundDetails } from "../controllers/host.controllers.js";
 
 
 
@@ -52,6 +53,8 @@ router.route("/uploadleaderboard").post( upload.fields([
     uploadleaderboard);
 
 router.route("/result/:id").get(result);
+// Existing routes ke saath add kar do
+router.route("/tournaments/:tournamentId/round/:roundNumber").get(verifyJWT, getRoundDetails);
 
 
 
