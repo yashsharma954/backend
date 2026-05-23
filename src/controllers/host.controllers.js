@@ -759,6 +759,7 @@ const getRoundDetails = asyncHandler(async (req, res) => {
     const round = tournament.rounds.find(
         r => r.roundNumber === Number(roundNumber)
     );
+    console.log(round);
 
     if (!round) {
         throw new ApiError(404, `Round ${roundNumber} not found`);
