@@ -151,11 +151,9 @@ const tournamentSchema = new mongoose.Schema({
       },
       startedAt: Date,
       completedAt: Date,
-    }
-  ],
 
-  // Participants
-  players: [
+      
+      players: [
     {
       teamId: { 
         type: mongoose.Schema.Types.ObjectId, 
@@ -179,6 +177,36 @@ const tournamentSchema = new mongoose.Schema({
       totalPoints: { type: Number, default: 0 }
     }
   ],
+
+    }
+    
+  ],
+
+  // Participants
+  // players: [
+  //   {
+  //     teamId: { 
+  //       type: mongoose.Schema.Types.ObjectId, 
+  //       ref: "TournamentTeam"   // Better to make separate model
+  //     },
+  //     teamName: String,
+  //     members: [
+  //       {
+  //         playerId: { type: mongoose.Schema.Types.ObjectId, ref: "Player" },
+  //         ign: String,
+  //       }
+  //     ],
+  //     payment: { type: Boolean, default: false },
+  //     joinedAt: { type: Date, default: Date.now },
+  //     currentRound: { type: Number, default: 1 },
+  //     status: {
+  //       type: String,
+  //       enum: ["active", "qualified", "eliminated"],
+  //       default: "active"
+  //     },
+  //     totalPoints: { type: Number, default: 0 }
+  //   }
+  // ],
 
   prizePool: { type: Number, required: true },
   entryFee: { type: Number, required: true },
