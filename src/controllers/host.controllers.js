@@ -898,46 +898,34 @@ const prepareMatchesInRounds = async () => {
 
 
 // ====================== GET MATCH DETAILS ======================
+// 
 const getMatchDetails = asyncHandler(async (req, res) => {
     const { tournamentId, roundNumber, matchId } = req.params;
 
-    console.log("📌 Match Request:", { tournamentId, roundNumber, matchId });
-
-    if (!tournamentId || !roundNumber || !matchId) {
-        throw new ApiError(400, "Missing parameters");
-    }
-
     const tournament = await Tournament.findById(tournamentId);
-    if (!tournament) {
-        throw new ApiError(404, "Tournament not found");
-    }
+    if (!tournament) throw new ApiError(404, "Tournament not found");
 
-    const round = tournament.rounds.find(
-        r => r.roundNumber === Number(roundNumber)
-    );
-
-    if (!round) {
-        throw new ApiError(404, `Round ${roundNumber} not found`);
-    }
+    const round = tournament.rounds.find(r => r.roundNumber === Number(roundNumber));
+    if (!round) throw new ApiError(404, `Round ${roundNumber} not found`);
 
     const matchNumber = Number(matchId);
-
-    // Temporary match data generate kar rahe hain
     const teamsPerMatch = round.teamsPerMatch || 4;
+
+    // Real players from round
+    const allPlayers = round.players || [];
     const startIndex = (matchNumber - 1) * teamsPerMatch;
-    const matchPlayers = (round.players || []).slice(startIndex, startIndex + teamsPerMatch);
+    const matchPlayers = allPlayers.slice(startIndex, startIndex + teamsPerMatch);
 
     const match = {
         matchId: matchNumber,
         matchNumber: `Match ${matchNumber}`,
-        status: "upcoming",           // "upcoming", "live", "completed"
+        status: "upcoming",
         roomId: "",
         roomPassword: "",
-        startedAt: null,
-        teams: matchPlayers.map((p, i) => ({
-            teamName: `Team ${String.fromCharCode(65 + i)}`,
-            members: p.members || [],
-            playerData: p
+        teams: matchPlayers.map((player, index) => ({
+            teamName: player.teamName || `Team ${String.fromCharCode(65 + index)}`, // Real teamName use karo
+            members: player.members || [],
+            playerData: player
         }))
     };
 
@@ -945,7 +933,6 @@ const getMatchDetails = asyncHandler(async (req, res) => {
         new ApiResponse(200, match, "Match details fetched successfully")
     );
 });
-
 
 
 
