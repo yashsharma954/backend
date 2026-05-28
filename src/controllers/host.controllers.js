@@ -826,36 +826,6 @@ const getRoundDetails = asyncHandler(async (req, res) => {
 });
 
 
-// ==================== TEMPORARY MIGRATION SCRIPT ====================
-// Sirf EK BAAR chalana hai
-
-// const fixTournamentPlayers = async () => {
-//   try {
-//     const tournaments = await Tournament.find({});
-
-//     for (let tournament of tournaments) {
-//       if (tournament.players && tournament.players.length > 0) {
-        
-//         // Root level players ko first round mein move kar do
-//         if (tournament.rounds && tournament.rounds.length > 0) {
-//           tournament.rounds[0].players = [...tournament.players];
-//           console.log(`✅ Moved ${tournament.players.length} players to Round 1 of ${tournament.title}`);
-//         }
-
-//         // Root level players ko khali kar do
-//         tournament.players = [];
-//         await tournament.save();
-//       }
-//     }
-
-//     console.log("🎉 All tournaments fixed successfully!");
-//   } catch (error) {
-//     console.error("❌ Error in fixing players:", error);
-//   }
-// };
-
-// // **Ek baar chalane ke liye** isko uncomment kar do aur server restart kar do
-// // fixTournamentPlayers();
 
 
 // ==================== IMPROVED MIGRATION SCRIPT ====================
@@ -902,6 +872,82 @@ const fixTournamentPlayers = async () => {
 
 // **Chalane ke liye uncomment karo**
 // fixTournamentPlayers();
+// Temporary - Match structure ready karne ke liye
+const prepareMatchesInRounds = async () => {
+  const tournaments = await Tournament.find({});
+
+  for (let tournament of tournaments) {
+    let changed = false;
+
+    tournament.rounds.forEach(round => {
+      if (!round.matches) {
+        round.matches = [];
+        changed = true;
+      }
+    });
+
+    if (changed) {
+      await tournament.save();
+      console.log(`Prepared matches array for: ${tournament.title}`);
+    }
+  }
+};
+
+// Uncomment aur ek baar chala do
+// prepareMatchesInRounds();
+
+
+// ====================== GET MATCH DETAILS ======================
+const getMatchDetails = asyncHandler(async (req, res) => {
+    const { tournamentId, roundNumber, matchId } = req.params;
+
+    if (!tournamentId || !roundNumber || !matchId) {
+        throw new ApiError(400, "Missing required parameters");
+    }
+
+    const tournament = await Tournament.findById(tournamentId);
+    if (!tournament) {
+        throw new ApiError(404, "Tournament not found");
+    }
+
+    const round = tournament.rounds.find(
+        r => r.roundNumber === Number(roundNumber)
+    );
+
+    if (!round) {
+        throw new ApiError(404, `Round ${roundNumber} not found`);
+    }
+
+    // Abhi ke liye dynamic match generate kar rahe hain
+    const matchNumber = Number(matchId);
+    const teamsPerMatch = round.teamsPerMatch || 4;
+
+    // Players ko match ke hisaab se distribute (temporary)
+    const allPlayersInRound = round.players || [];
+    const startIndex = (matchNumber - 1) * teamsPerMatch;
+    const matchPlayers = allPlayersInRound.slice(startIndex, startIndex + teamsPerMatch);
+
+    const match = {
+        matchId: matchNumber,
+        matchNumber: `Match ${matchNumber}`,
+        status: "upcoming",           // "upcoming", "live", "completed"
+        roomId: "",
+        roomPassword: "",
+        startedAt: null,
+        teams: matchPlayers.map((player, index) => ({
+            teamName: `Team ${String.fromCharCode(65 + index)}`,
+            members: player.members || [],
+            playerData: player
+        })),
+        totalTeams: matchPlayers.length,
+        roundNumber: Number(roundNumber)
+    };
+
+    return res.status(200).json(
+        new ApiResponse(200, match, "Match details fetched successfully")
+    );
+});
+
 
 
 
@@ -922,3 +968,4 @@ export {liveroom};
 export {uploadleaderboard};
 export {result};
 export { getRoundDetails };
+export { getMatchDetails };
