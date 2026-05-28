@@ -157,44 +157,107 @@ const tournament=asyncHandler(async(req,res)=>{
   );
 });
 
-const join=asyncHandler(async(req,res)=>{
+// const join=asyncHandler(async(req,res)=>{
 
   
-  const {teamName,members,playerId,tournamentId}=req.body;
-  if(!teamName){
-    throw new ApiError(400,"teamname required");
-  }
+//   const {teamName,members,playerId,tournamentId}=req.body;
+//   if(!teamName){
+//     throw new ApiError(400,"teamname required");
+//   }
 
-  if(!members){
-    throw new ApiError(400,"members is required");
-  }
+//   if(!members){
+//     throw new ApiError(400,"members is required");
+//   }
 
-  const user=await Player.findById(playerId);
-  if(!playerId){
-    throw new ApiError(404,"user not found");
-  }
+//   const user=await Player.findById(playerId);
+//   if(!playerId){
+//     throw new ApiError(404,"user not found");
+//   }
 
-  user.teamname=teamName;
-  user.teammates = members.map((m) => ({
-    ingameName: m.ign,
-  }));
-  await user.save();
-  const tournament=await Tournament.findById(tournamentId);
-  tournament.currentTeams+=1;
-  tournament.players.push({
-    teamName,
-    members: members.map((m) => ({
-      playerId:user._id,
-      ign: m.ign,
-    })),
-    payment: true,
-    joinedAt: new Date(),
-  });
-  await tournament.save();
-  return res.status(201).json(
-    new ApiResponse(200,user,"tournament join succesfully")
-  );
+//   user.teamname=teamName;
+//   user.teammates = members.map((m) => ({
+//     ingameName: m.ign,
+//   }));
+//   await user.save();
+//   const tournament=await Tournament.findById(tournamentId);
+//   tournament.currentTeams+=1;
+//   tournament.players.push({
+//     teamName,
+//     members: members.map((m) => ({
+//       playerId:user._id,
+//       ign: m.ign,
+//     })),
+//     payment: true,
+//     joinedAt: new Date(),
+//   });
+//   await tournament.save();
+//   return res.status(201).json(
+//     new ApiResponse(200,user,"tournament join succesfully")
+//   );
 
+// });
+
+const join = asyncHandler(async (req, res) => {
+    const { teamName, members, playerId, tournamentId } = req.body;
+
+    if (!teamName) throw new ApiError(400, "teamName is required");
+    if (!members || !Array.isArray(members) || members.length === 0) {
+        throw new ApiError(400, "members array is required");
+    }
+    if (!playerId) throw new ApiError(400, "playerId is required");
+    if (!tournamentId) throw new ApiError(400, "tournamentId is required");
+
+    // Find Player
+    const user = await Player.findById(playerId);
+    if (!user) throw new ApiError(404, "Player not found");
+
+    // Find Tournament
+    const tournament = await Tournament.findById(tournamentId);
+    if (!tournament) throw new ApiError(404, "Tournament not found");
+
+    // Check if already joined
+    const alreadyJoined = tournament.rounds[0]?.players?.some(
+        p => p.members?.some(m => m.playerId.toString() === playerId)
+    );
+
+    if (alreadyJoined) {
+        throw new ApiError(400, "You have already joined this tournament");
+    }
+
+    // Add player to Round 1 (first round)
+    const playerData = {
+        teamName,
+        members: members.map((m) => ({
+            playerId: user._id,
+            ign: m.ign,
+        })),
+        payment: true,
+        joinedAt: new Date(),
+        currentRound: 1,
+        status: "active",
+        totalPoints: 0
+    };
+
+    // Push into Round 1
+    if (!tournament.rounds || tournament.rounds.length === 0) {
+        throw new ApiError(400, "No rounds found in tournament");
+    }
+
+    tournament.rounds[0].players.push(playerData);
+
+    // Update currentTeams count
+    tournament.currentTeams += 1;
+
+    await tournament.save();
+
+    // Optional: Update player document also
+    user.teamname = teamName;
+    user.teammates = members.map((m) => ({ ingameName: m.ign }));
+    await user.save();
+
+    return res.status(201).json(
+        new ApiResponse(201, user, "Successfully joined tournament in Round 1")
+    );
 });
 
 
