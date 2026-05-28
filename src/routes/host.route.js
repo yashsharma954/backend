@@ -57,7 +57,7 @@ router.route("/result/:id").get(result);
 // Existing routes ke saath add kar do
 router.route("/tournaments/:tournamentId/round/:roundNumber").get(getRoundDetails);
 // Match Routes
-router.route("/tournaments/:tournamentId/round/match/:matchId")
+router.route("/tournaments/:tournamentId/round/:roundNumber/match/:matchId")
     .get( getMatchDetails);
 
 

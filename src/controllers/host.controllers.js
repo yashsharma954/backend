@@ -901,8 +901,10 @@ const prepareMatchesInRounds = async () => {
 const getMatchDetails = asyncHandler(async (req, res) => {
     const { tournamentId, roundNumber, matchId } = req.params;
 
+    console.log("📌 Match Request:", { tournamentId, roundNumber, matchId });
+
     if (!tournamentId || !roundNumber || !matchId) {
-        throw new ApiError(400, "Missing required parameters");
+        throw new ApiError(400, "Missing parameters");
     }
 
     const tournament = await Tournament.findById(tournamentId);
@@ -918,14 +920,12 @@ const getMatchDetails = asyncHandler(async (req, res) => {
         throw new ApiError(404, `Round ${roundNumber} not found`);
     }
 
-    // Abhi ke liye dynamic match generate kar rahe hain
     const matchNumber = Number(matchId);
-    const teamsPerMatch = round.teamsPerMatch || 4;
 
-    // Players ko match ke hisaab se distribute (temporary)
-    const allPlayersInRound = round.players || [];
+    // Temporary match data generate kar rahe hain
+    const teamsPerMatch = round.teamsPerMatch || 4;
     const startIndex = (matchNumber - 1) * teamsPerMatch;
-    const matchPlayers = allPlayersInRound.slice(startIndex, startIndex + teamsPerMatch);
+    const matchPlayers = (round.players || []).slice(startIndex, startIndex + teamsPerMatch);
 
     const match = {
         matchId: matchNumber,
@@ -934,13 +934,11 @@ const getMatchDetails = asyncHandler(async (req, res) => {
         roomId: "",
         roomPassword: "",
         startedAt: null,
-        teams: matchPlayers.map((player, index) => ({
-            teamName: `Team ${String.fromCharCode(65 + index)}`,
-            members: player.members || [],
-            playerData: player
-        })),
-        totalTeams: matchPlayers.length,
-        roundNumber: Number(roundNumber)
+        teams: matchPlayers.map((p, i) => ({
+            teamName: `Team ${String.fromCharCode(65 + i)}`,
+            members: p.members || [],
+            playerData: p
+        }))
     };
 
     return res.status(200).json(
