@@ -826,7 +826,82 @@ const getRoundDetails = asyncHandler(async (req, res) => {
 });
 
 
+// ==================== TEMPORARY MIGRATION SCRIPT ====================
+// Sirf EK BAAR chalana hai
 
+// const fixTournamentPlayers = async () => {
+//   try {
+//     const tournaments = await Tournament.find({});
+
+//     for (let tournament of tournaments) {
+//       if (tournament.players && tournament.players.length > 0) {
+        
+//         // Root level players ko first round mein move kar do
+//         if (tournament.rounds && tournament.rounds.length > 0) {
+//           tournament.rounds[0].players = [...tournament.players];
+//           console.log(`✅ Moved ${tournament.players.length} players to Round 1 of ${tournament.title}`);
+//         }
+
+//         // Root level players ko khali kar do
+//         tournament.players = [];
+//         await tournament.save();
+//       }
+//     }
+
+//     console.log("🎉 All tournaments fixed successfully!");
+//   } catch (error) {
+//     console.error("❌ Error in fixing players:", error);
+//   }
+// };
+
+// // **Ek baar chalane ke liye** isko uncomment kar do aur server restart kar do
+// // fixTournamentPlayers();
+
+
+// ==================== IMPROVED MIGRATION SCRIPT ====================
+
+const fixTournamentPlayers = async () => {
+  try {
+    const tournaments = await Tournament.find({}).lean(); // lean() for better performance
+
+    for (let tournament of tournaments) {
+      let updated = false;
+
+      // Case 1: Players root level pe hain
+      if (tournament.players && tournament.players.length > 0) {
+        if (tournament.rounds && tournament.rounds.length > 0) {
+          tournament.rounds[0].players = [...tournament.players];
+          console.log(`✅ Moved ${tournament.players.length} players to Round 1 → ${tournament.title}`);
+          updated = true;
+        }
+        tournament.players = []; // root level clear
+      }
+
+      // Case 2: Agar kisi round mein players nahi hain to first round mein daal do
+      if (tournament.rounds && tournament.rounds.length > 0) {
+        const firstRound = tournament.rounds[0];
+        
+        if (!firstRound.players || firstRound.players.length === 0) {
+          // Agar root level pe nahi mila to kuch aur jagah se le aao (agar ho)
+          firstRound.players = [];
+          updated = true;
+        }
+      }
+
+      if (updated) {
+        await Tournament.updateOne({ _id: tournament._id }, tournament);
+        console.log(`💾 Saved changes for: ${tournament.title}`);
+      }
+    }
+
+    console.log("🎉 Migration Completed Successfully!");
+  } catch (error) {
+    console.error("❌ Migration Error:", error);
+  }
+};
+
+// **Chalane ke liye uncomment karo**
+// fixTournamentPlayers();
 
 
 
