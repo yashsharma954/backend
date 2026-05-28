@@ -157,45 +157,8 @@ const tournament=asyncHandler(async(req,res)=>{
   );
 });
 
-// const join=asyncHandler(async(req,res)=>{
 
-  
-//   const {teamName,members,playerId,tournamentId}=req.body;
-//   if(!teamName){
-//     throw new ApiError(400,"teamname required");
-//   }
 
-//   if(!members){
-//     throw new ApiError(400,"members is required");
-//   }
-
-//   const user=await Player.findById(playerId);
-//   if(!playerId){
-//     throw new ApiError(404,"user not found");
-//   }
-
-//   user.teamname=teamName;
-//   user.teammates = members.map((m) => ({
-//     ingameName: m.ign,
-//   }));
-//   await user.save();
-//   const tournament=await Tournament.findById(tournamentId);
-//   tournament.currentTeams+=1;
-//   tournament.players.push({
-//     teamName,
-//     members: members.map((m) => ({
-//       playerId:user._id,
-//       ign: m.ign,
-//     })),
-//     payment: true,
-//     joinedAt: new Date(),
-//   });
-//   await tournament.save();
-//   return res.status(201).json(
-//     new ApiResponse(200,user,"tournament join succesfully")
-//   );
-
-// });
 
 const join = asyncHandler(async (req, res) => {
     const { teamName, members, playerId, tournamentId } = req.body;
