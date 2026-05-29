@@ -6,6 +6,7 @@ import {uploadOnCloudinary}  from "../utilis/cloudinary.js";
 import { Host } from "../models/host.model.js";
 import { Player } from "../models/player.model.js";
 import { threadCpuUsage } from "process";
+import jwt from "jsonwebtoken";
 
 const getTournament=asyncHandler(async(req,res)=>{
     const { status, game } = req.query;
