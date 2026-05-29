@@ -28,3 +28,42 @@ export const verifyJWT = asyncHandler(async(req, _, next) => {
     }
     
 })
+
+export const verifyPlayerJWT = asyncHandler(async (req, _, next) => {
+    try {
+        // Token extract karo
+        const token = 
+            req.cookies?.accessToken || 
+            req.header("Authorization")?.replace("Bearer ", "");
+
+        if (!token) {
+            throw new ApiError(401, "Unauthorized request: No token provided");
+        }
+
+        // Verify token
+        const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+
+        // Player find karo
+        const player = await Player.findById(decodedToken?._id)
+            .select("-password -refreshToken");
+
+        if (!player) {
+            throw new ApiError(401, "Invalid Access Token");
+        }
+
+        // Attach player to request
+        req.user = player;
+        next();
+
+    } catch (error: any) {
+        if (error.name === "TokenExpiredError") {
+            throw new ApiError(401, "Token has expired. Please login again");
+        }
+        
+        if (error.name === "JsonWebTokenError") {
+            throw new ApiError(401, "Invalid token");
+        }
+
+        throw new ApiError(401, error?.message || "Invalid access token");
+    }
+});

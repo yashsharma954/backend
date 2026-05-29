@@ -254,6 +254,45 @@ const search = asyncHandler(async (req, res) => {
   );
 });
 
+// ====================== GET MY TOURNAMENTS ======================
+const getMyTournaments = asyncHandler(async (req, res) => {
+    const playerId = req.user._id;   // JWT se aayega
+
+    const tournaments = await Tournament.find({
+        "rounds.players.members.playerId": playerId
+    }).select("title game matchType status rounds");
+
+    const myTournaments = [];
+
+    tournaments.forEach(tournament => {
+        tournament.rounds.forEach(round => {
+            const playerEntry = round.players.find(p => 
+                p.members.some(m => m.playerId.toString() === playerId.toString())
+            );
+
+            if (playerEntry) {
+                myTournaments.push({
+                    _id: tournament._id,
+                    title: tournament.title,
+                    game: tournament.game,
+                    matchType: tournament.matchType,
+                    status: tournament.status,
+                    currentRound: round.roundNumber,
+                    teamName: playerEntry.teamName,
+                    // Room details agar live match hai
+                    roomId: round.matches?.[0]?.roomId || null,
+                    roomPassword: round.matches?.[0]?.roomPassword || null,
+                    joinedAt: playerEntry.joinedAt
+                });
+            }
+        });
+    });
+
+    return res.status(200).json(
+        new ApiResponse(200, myTournaments, "My tournaments fetched successfully")
+    );
+});
+
 export {getTournament};
 export {sendotp};
 export {verify};
@@ -261,3 +300,4 @@ export {resendotp};
 export {tournament};
 export {join};
 export {search};
+export {getMyTournaments};
