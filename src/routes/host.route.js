@@ -19,6 +19,7 @@ import {uploadleaderboard} from "../controllers/host.controllers.js";
 import {result} from "../controllers/host.controllers.js";
 import { getRoundDetails } from "../controllers/host.controllers.js";
 import { getMatchDetails } from "../controllers/host.controllers.js";
+import { startMatch } from "../controllers/host.controllers.js";
 
 
 
@@ -59,6 +60,10 @@ router.route("/tournaments/:tournamentId/round/:roundNumber").get(getRoundDetail
 // Match Routes
 router.route("/tournaments/:tournamentId/round/:roundNumber/match/:matchId")
     .get( getMatchDetails);
+
+    // Match Room ID/Password Route
+router.route("/tournaments/:tournamentId/round/:roundNumber/match/:matchId/start")
+     .post( startMatch);     // ya bina verifyJWT ke test ke liye
 
 
 

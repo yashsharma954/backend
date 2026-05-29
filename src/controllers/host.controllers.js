@@ -895,6 +895,34 @@ const prepareMatchesInRounds = async () => {
 
 // Uncomment aur ek baar chala do
 // prepareMatchesInRounds();
+const migrateMatchesField = async () => {
+  try {
+    const tournaments = await Tournament.find({});
+
+    for (let tournament of tournaments) {
+      let updated = false;
+
+      tournament.rounds.forEach((round, index) => {
+        if (!round.matches) {
+          round.matches = [];
+          updated = true;
+          console.log(`Added matches array in Round ${round.roundNumber} of ${tournament.title}`);
+        }
+      });
+
+      if (updated) {
+        await tournament.save();
+      }
+    }
+
+    console.log("🎉 Migration Completed!");
+  } catch (error) {
+    console.error("Migration Error:", error);
+  }
+};
+
+// **Ek baar uncomment karke chala do**
+// migrateMatchesField();
 
 
 // ====================== GET MATCH DETAILS ======================
@@ -935,6 +963,66 @@ const getMatchDetails = asyncHandler(async (req, res) => {
 });
 
 
+// ====================== START MATCH (ROOM ID & PASSWORD) ======================
+const startMatch = asyncHandler(async (req, res) => {
+    const { tournamentId, roundNumber, matchId } = req.params;
+    const { roomId, roomPassword } = req.body;
+
+    if (!roomId || !roomPassword) {
+        throw new ApiError(400, "Room ID and Password are required");
+    }
+
+    const tournament = await Tournament.findById(tournamentId);
+    if (!tournament) {
+        throw new ApiError(404, "Tournament not found");
+    }
+
+    const round = tournament.rounds.find(
+        r => r.roundNumber === Number(roundNumber)
+    );
+    if (!round) {
+        throw new ApiError(404, `Round ${roundNumber} not found`);
+    }
+
+    // Agar matches array nahi hai to create kar do
+    if (!round.matches) {
+        round.matches = [];
+    }
+
+    // Match find karo ya naya banao
+    let match = round.matches.find(m => m.matchNumber === Number(matchId));
+
+    if (!match) {
+        match = {
+            matchNumber: Number(matchId),
+            status: "upcoming",
+            roomId: "",
+            roomPassword: "",
+            startedAt: null,
+            teams: []
+        };
+        round.matches.push(match);
+    }
+
+    // Update match details
+    match.status = "live";
+    match.roomId = roomId;
+    match.roomPassword = roomPassword;
+    match.startedAt = new Date();
+
+    await tournament.save();
+
+    console.log(`✅ Match ${matchId} started with Room ID: ${roomId}`);
+
+    return res.status(200).json(
+        new ApiResponse(
+            200, 
+            match, 
+            "Match started successfully with Room ID & Password"
+        )
+    );
+});
+
 
 export {logouthost};
 export {loginhost};
@@ -954,3 +1042,4 @@ export {uploadleaderboard};
 export {result};
 export { getRoundDetails };
 export { getMatchDetails };
+export {startMatch};
