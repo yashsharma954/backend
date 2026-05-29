@@ -55,7 +55,7 @@ export const verifyPlayerJWT = asyncHandler(async (req, _, next) => {
         req.user = player;
         next();
 
-    } catch (error: any) {
+    } catch (error) {
         if (error.name === "TokenExpiredError") {
             throw new ApiError(401, "Token has expired. Please login again");
         }
