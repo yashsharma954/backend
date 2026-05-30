@@ -68,30 +68,62 @@ export const verifyJWT = asyncHandler(async(req, _, next) => {
 //     }
 // });
 
+// export const verifyPlayerJWT = asyncHandler(async (req, _, next) => {
+//     try {
+//         const token = req.cookies?.accessToken || 
+//                      req.header("Authorization")?.replace("Bearer ", "");
+
+//         console.log("🔑 Received Token:", token ? "YES" : "NO");
+//         console.log("Token Length:", token?.length);
+
+//         if (!token) {
+//             throw new ApiError(401, "No token provided");
+//         }
+
+//         const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+//         console.log("✅ Token Decoded Successfully");
+
+//         const player = await Player.findById(decodedToken?._id).select("-password");
+
+//         if (!player) throw new ApiError(401, "Player not found");
+
+//         req.user = player;
+//         next();
+
+//     } catch (error) {
+//         console.error("JWT Error:", error.name, error.message);
+//         throw new ApiError(401, error.message || "Invalid token");
+//     }
+// });
+
 export const verifyPlayerJWT = asyncHandler(async (req, _, next) => {
     try {
         const token = req.cookies?.accessToken || 
-                     req.header("Authorization")?.replace("Bearer ", "");
-
-        console.log("🔑 Received Token:", token ? "YES" : "NO");
-        console.log("Token Length:", token?.length);
+                     req.header("Authorization")?.replace("Bearer ", "").trim();
 
         if (!token) {
-            throw new ApiError(401, "No token provided");
+            throw new ApiError(401, "Authorization token is required");
         }
 
-        const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
-        console.log("✅ Token Decoded Successfully");
+        const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET) ;
 
-        const player = await Player.findById(decodedToken?._id).select("-password");
+        const player = await Player.findById(decodedToken._id)
+            .select("-password -refreshToken");
 
-        if (!player) throw new ApiError(401, "Player not found");
+        if (!player) {
+            throw new ApiError(401, "Player not found");
+        }
 
         req.user = player;
         next();
 
     } catch (error) {
-        console.error("JWT Error:", error.name, error.message);
-        throw new ApiError(401, error.message || "Invalid token");
+        console.error("JWT Verify Error:", error.name, error.message);
+        
+        if (error.name === "TokenExpiredError") {
+            throw new ApiError(401, "Token has expired. Please login again");
+        }
+        
+        throw new ApiError(401, "Invalid or expired token");
     }
 });

@@ -342,7 +342,7 @@ const getMyTournaments = asyncHandler(async (req, res) => {
 
     const tournaments = await Tournament.find({
         "rounds.players.members.playerId": playerId
-    }).select("title game matchType status rounds");
+    }).select("title game matchType status rounds").lean();
 
     const myTournaments = [];
 
