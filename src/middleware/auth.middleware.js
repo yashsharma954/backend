@@ -100,6 +100,8 @@ export const verifyPlayerJWT = asyncHandler(async (req, _, next) => {
     try {
         const token = req.cookies?.accessToken || 
                      req.header("Authorization")?.replace("Bearer ", "").trim();
+                     console.log("🔑 Received Token in Backend:", token ? "YES" : "NO");
+        console.log("Token Length in Backend:", token?.length);
 
         if (!token) {
             throw new ApiError(401, "Authorization token is required");
