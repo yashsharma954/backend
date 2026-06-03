@@ -250,11 +250,18 @@ const join = asyncHandler(async (req, res) => {
     if (!tournament) throw new ApiError(404, "Tournament not found");
 
     // Generate JWT Token
-    const accessToken = jwt.sign(
-        { _id: user._id },
-        process.env.ACCESS_TOKEN_SECRET,
-        { expiresIn: '7d' }
-    );
+    let accessToken;
+
+    // Agar pehle se token nahi hai tabhi naya banao
+    if (!req.body.existingToken) {   // ya kisi aur condition se check karo
+        accessToken = jwt.sign(
+            { _id: user._id },
+            process.env.ACCESS_TOKEN_SECRET,
+            { expiresIn: '7d' }
+        );
+    } else {
+        accessToken = req.body.existingToken; // purana wapas bhej do
+    }
 
     // Check if already joined
     const alreadyJoined = tournament.rounds[0]?.players?.some(
