@@ -8,6 +8,11 @@ import {join} from "../controllers/player.controllers.js";
 import { search } from "../controllers/player.controllers.js";
 import { getMyTournaments } from "../controllers/player.controllers.js";
 import { verifyPlayerJWT } from "../middleware/auth.middleware.js";
+import { registerplayer} from "../controllers/player.controllers.js";
+import { loginplayer } from "../controllers/player.controllers.js";
+import { logoutplayer } from "../controllers/player.controllers.js";
+import { verifyJWT } from "../middleware/auth.middleware.js";
+import { upload } from "../middleware/multer.middleware.js";
 
 const router=Router();
 
@@ -22,6 +27,19 @@ router.route("/tournament/:id").get(tournament);
 router.route("/join").post(join);
 router.route("/search").post(search);
 router.route("/mytournaments").get(verifyPlayerJWT, getMyTournaments);
+
+
+router.route("/registerplayer").post(
+     upload.fields([
+        {
+            name: "playeravatar",
+            maxCount: 1
+        }, 
+    ]),
+    registerplayer);
+   router.route("/loginplayer").post(loginplayer); 
+   router.route("/logoutplayer").post(verifyJWT,logoutplayer);
+
 
 
 

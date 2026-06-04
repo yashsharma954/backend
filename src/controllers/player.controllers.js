@@ -175,78 +175,142 @@ const tournament=asyncHandler(async(req,res)=>{
   );
 });
 
+const registerplayer=asyncHandler(async(req,res)=>{
+  const {name,username,phone,password}=req.body;
+
+  if(name==""){
+          throw new ApiError(400,"username is required");
+          
+      }
+  
+      if (!username) {
+    throw new ApiError(400, "Username is required");
+  }
+      
+      if(phone==""){
+          throw new ApiError(400,"phone number  is required");
+          
+      }
+      if(password==""){
+          throw new ApiError(400,"password is required");
+          
+      }
+
+      const existedUser = await Player.findOne({
+              $or: [{ username }, { phone }]
+          })
+      
+           if (existedUser) {
+              throw new ApiError(409, "User with name or phone already exists")
+          }
+
+          let playeravatar;
+    const avatarLocalPath = req.files?.playeravatar?.[0]?.path;
+    console.log("avatarLocalpath is ",avatarLocalPath);
+
+       if (avatarLocalPath) {
+          playeravatar = await uploadOnCloudinary(avatarLocalPath)
+          console.log("avatar is ",playeravatar.url);
+       }
+   
+
+       const Player = await Player.create({
+               name,
+               username,
+               avatar: avatar?.url || "",
+               phone, 
+               password,
+               
+           })
+           const createdplayer = await Player.findById(player._id).select(
+        "-password -refreshToken"
+    )
+
+    if (!createdplayer) {
+        throw new ApiError(500, "Something went wrong while registering the user")
+    }
+
+    return res.status(201).json(
+        new ApiResponse(200, createdplayer, "Host registered Successfully")
+    )
+
+})
+
+const loginplayer=asyncHandler(async(req,res)=>{
+    const {username,password}=req.body;
+    if (!username ) {
+  throw new ApiError(400, "Username required");
+    }
+
+    if(!password){
+        throw new ApiError(400,"password required");
+    }
+
+     const player = await Player.findOne({username });
+       
+       if (!player) {
+      throw new ApiError(404, "Host not found");
+       }
+
+        const isPasswordValid = await player.isPasswordCorrect(password);
+        console.log("ispassword is ",isPasswordValid);
+
+      if (!isPasswordValid) {
+      throw new ApiError(401, "Invalid password");
+          }
+            const {accessToken, refreshToken} = await generateAccessAndRefereshTokens(player._id);
+
+       const options = {
+        httpOnly: true,
+        secure: true
+    }
+
+    return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(
+        new ApiResponse(
+            200, 
+            {
+                player, accessToken, refreshToken
+            },
+            "User logged In Successfully"
+        )
+    );
 
 
 
-// const join = asyncHandler(async (req, res) => {
-//     const { teamName, members, playerId, tournamentId } = req.body;
+});
 
-//     if (!teamName) throw new ApiError(400, "teamName is required");
-//     if (!members || !Array.isArray(members) || members.length === 0) {
-//         throw new ApiError(400, "members array is required");
-//     }
-//     if (!playerId) throw new ApiError(400, "playerId is required");
-//     if (!tournamentId) throw new ApiError(400, "tournamentId is required");
+const logoutplayer=asyncHandler(async(req,res)=>{
+   
+    await Player.findByIdAndUpdate(
+        req.user._id,
+        {
+            $unset: {
+                refreshToken: 1 // this removes the field from document
+            }
+        },
+        {
+            new: true
+        }
+    )
 
-//     // Find Player
-//     const user = await Player.findById(playerId);
-//     if (!user) throw new ApiError(404, "Player not found");
+    const options = {
+        httpOnly: true,
+        secure: true
+    }
 
-//     // Find Tournament
-//     const tournament = await Tournament.findById(tournamentId);
-//     if (!tournament) throw new ApiError(404, "Tournament not found");
+    return res
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json(new ApiResponse(200, {}, "Host logged Out"))
+
+});
 
 
-//     const accessToken = jwt.sign(
-//         { _id: user._id },
-//         process.env.ACCESS_TOKEN_SECRET,
-//         { expiresIn: '7d' }
-//     );
-
-//     // Check if already joined
-//     const alreadyJoined = tournament.rounds[0]?.players?.some(
-//         p => p.members?.some(m => m.playerId.toString() === playerId)
-//     );
-
-//     if (alreadyJoined) {
-//         throw new ApiError(400, "You have already joined this tournament");
-//     }
-
-//     // Add player to Round 1 (first round)
-//     const playerData = {
-//         teamName,
-//         members: members.map((m) => ({
-//             playerId: user._id,
-//             ign: m.ign,
-//         })),
-//         payment: true,
-//         joinedAt: new Date(),
-//         currentRound: 1,
-//         status: "active",
-//         totalPoints: 0
-//     };
-
-//     // Push into Round 1
-//     if (!tournament.rounds || tournament.rounds.length === 0) {
-//         throw new ApiError(400, "No rounds found in tournament");
-//     }
-
-//     tournament.rounds[0].players.push(playerData);
-
-//     // Update currentTeams count
-//     tournament.currentTeams += 1;
-
-//     await tournament.save();
-
-//     // Optional: Update player document also
-//     user.teamname = teamName;
-//     user.teammates = members.map((m) => ({ ingameName: m.ign }));
-//     await user.save();
-
-//     return res.status(201).json(
-//         new ApiResponse(201, {user,accessToken}, "Successfully joined tournament in Round 1")
-//     );
-// });
 
 const join = asyncHandler(async (req, res) => {
     const { teamName, members, playerId, tournamentId } = req.body;
@@ -407,3 +471,8 @@ export {tournament};
 export {join};
 export {search};
 export {getMyTournaments};
+export {registerplayer};
+export {loginplayer};
+export {logoutplayer};
+
+

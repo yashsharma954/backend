@@ -1,7 +1,24 @@
 import mongoose from "mongoose";
+import { type } from "os";
 
 const playerSchema = new mongoose.Schema(
 {
+  name:{
+   type:String,
+   required: true,
+  },
+  username:{
+    type:String,
+    required:true,
+    unique:true,
+  },
+  playeravatar:{
+    type:String,
+  },
+  password:{
+    type:String,
+    required:true,
+  },
   phone: {
     type: String,
     required: true,
@@ -53,6 +70,17 @@ const playerSchema = new mongoose.Schema(
 {
   timestamps: true,
 });
+
+playerSchema.pre("save", async function () {
+    if(!this.isModified("password")) return ;
+
+    this.password = await bcrypt.hash(this.password, 10)
+    
+})
+
+playerSchema.methods.isPasswordCorrect = async function(password){
+    return await bcrypt.compare(password, this.password)
+}
 
 playerSchema.methods.generateAccessToken = function(){
     return jwt.sign(
