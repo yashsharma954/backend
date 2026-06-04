@@ -25,6 +25,9 @@ const playerSchema = new mongoose.Schema(
   otpExpiry: {
     type: Date,
   },
+   refreshToken: {
+            type: String
+        },
 
   
   tournamentsJoined: [
@@ -50,5 +53,30 @@ const playerSchema = new mongoose.Schema(
 {
   timestamps: true,
 });
+
+playerSchema.methods.generateAccessToken = function(){
+    return jwt.sign(
+        {
+            _id: this._id,
+            username: this.username,
+        },
+        process.env.ACCESS_TOKEN_SECRET,
+        {
+            expiresIn: process.env.ACCESS_TOKEN_EXPIRY
+        }
+    )
+}
+playerSchema.methods.generateRefreshToken = function(){
+    return jwt.sign(
+        {
+            _id: this._id,
+            
+        },
+        process.env.REFRESH_TOKEN_SECRET,
+        {
+            expiresIn: process.env.REFRESH_TOKEN_EXPIRY
+        }
+    )
+}
 
 export const Player = mongoose.model("Player", playerSchema);

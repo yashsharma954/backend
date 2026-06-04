@@ -8,6 +8,23 @@ import { Player } from "../models/player.model.js";
 import { threadCpuUsage } from "process";
 import jwt from "jsonwebtoken";
 
+const generateAccessAndRefereshTokens = async(userId) =>{
+    try {
+        const player = await Player.findById(userId)
+        const accessToken = Player.generateAccessToken()
+        const refreshToken = Player.generateRefreshToken()
+
+        host.refreshToken = refreshToken
+        await host.save({ validateBeforeSave: false })
+
+        return {accessToken, refreshToken}
+
+
+    } catch (error) {
+        throw new ApiError(500, "Something went wrong while generating referesh and access token")
+    }
+}
+
 const getTournament=asyncHandler(async(req,res)=>{
     const { status, game } = req.query;
 
