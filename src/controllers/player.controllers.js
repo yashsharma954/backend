@@ -214,7 +214,7 @@ const registerplayer=asyncHandler(async(req,res)=>{
        }
    
 
-       const Player = await Player.create({
+       const player = await Player.create({
                name,
                username,
                avatar: avatar?.url || "",
