@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import { type } from "os";
+import jwt from "jsonwebtoken";
 
 const playerSchema = new mongoose.Schema(
 {
