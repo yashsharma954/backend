@@ -11,11 +11,11 @@ import jwt from "jsonwebtoken";
 const generateAccessAndRefereshTokens = async(userId) =>{
     try {
         const player = await Player.findById(userId)
-        const accessToken = Player.generateAccessToken()
-        const refreshToken = Player.generateRefreshToken()
+        const accessToken = player.generateAccessToken()
+        const refreshToken = player.generateRefreshToken()
 
-        host.refreshToken = refreshToken
-        await host.save({ validateBeforeSave: false })
+        player.refreshToken = refreshToken
+        await player.save({ validateBeforeSave: false })
 
         return {accessToken, refreshToken}
 
