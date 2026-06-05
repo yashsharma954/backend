@@ -252,7 +252,7 @@ const loginplayer=asyncHandler(async(req,res)=>{
       throw new ApiError(404, "Host not found");
        }
 
-        const isPasswordValid = await player.isPasswordCorrect(password);
+        const isPasswordValid = await Player.isPasswordCorrect(password);
         console.log("ispassword is ",isPasswordValid);
 
       if (!isPasswordValid) {
