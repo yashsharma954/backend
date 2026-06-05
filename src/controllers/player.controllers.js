@@ -87,7 +87,7 @@ const sendotp = asyncHandler(async (req, res) => {
 
   const { phone, tournamentId } = req.body;
 
-  const player = await Player.create({ phone });
+  const player = await Player.findOne({ phone });
 
   // 🔥 check already joined
   const alreadyJoined = player.tournamentsJoined.some(
