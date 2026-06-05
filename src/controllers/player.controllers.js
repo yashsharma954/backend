@@ -8,22 +8,46 @@ import { Player } from "../models/player.model.js";
 import { threadCpuUsage } from "process";
 import jwt from "jsonwebtoken";
 
-const generateAccessAndRefereshTokens = async(userId) =>{
+// const generateAccessAndRefereshTokens = async(userId) =>{
+//     try {
+//         const player = await Player.findById(userId)
+//         const accessToken = player.generateAccessToken()
+//         const refreshToken = player.generateRefreshToken()
+
+//         player.refreshToken = refreshToken
+//         await player.save({ validateBeforeSave: false })
+
+//         return {accessToken, refreshToken}
+
+
+//     } catch (error) {
+//         throw new ApiError(500, "Something went wrong while generating referesh and access token")
+//     }
+// }
+
+// Generate Access & Refresh Tokens
+const generateAccessAndRefereshTokens = async (userId) => {
     try {
-        const player = await Player.findById(userId)
-        const accessToken = player.generateAccessToken()
-        const refreshToken = player.generateRefreshToken()
+        const player = await Player.findById(userId);
 
-        player.refreshToken = refreshToken
-        await player.save({ validateBeforeSave: false })
+        if (!player) {
+            throw new ApiError(404, "Player not found");
+        }
 
-        return {accessToken, refreshToken}
+        const accessToken = player.generateAccessToken();
+        const refreshToken = player.generateRefreshToken();
 
+        // Save refresh token in database
+        player.refreshToken = refreshToken;
+        await player.save({ validateBeforeSave: false });
+
+        return { accessToken, refreshToken };
 
     } catch (error) {
-        throw new ApiError(500, "Something went wrong while generating referesh and access token")
+        console.error("Token Generation Error:", error); // ← Yeh line add kiye debugging ke liye
+        throw new ApiError(500, "Something went wrong while generating access and refresh token");
     }
-}
+};
 
 const getTournament=asyncHandler(async(req,res)=>{
     const { status, game } = req.query;
@@ -236,51 +260,108 @@ const registerplayer=asyncHandler(async(req,res)=>{
 
 })
 
-const loginplayer=asyncHandler(async(req,res)=>{
-    const {username,password}=req.body;
-    if (!username ) {
-  throw new ApiError(400, "Username required");
-    }
+// const loginplayer=asyncHandler(async(req,res)=>{
+//     const {username,password}=req.body;
+//     if (!username ) {
+//   throw new ApiError(400, "Username required");
+//     }
 
-    if(!password){
-        throw new ApiError(400,"password required");
-    }
+//     if(!password){
+//         throw new ApiError(400,"password required");
+//     }
 
-     const player = await Player.findOne({username });
+//      const player = await Player.findOne({username });
        
-       if (!player) {
-      throw new ApiError(404, "Host not found");
-       }
+//        if (!player) {
+//       throw new ApiError(404, "Host not found");
+//        }
 
-        const isPasswordValid = await player.isPasswordCorrect(password);
-        console.log("ispassword is ",isPasswordValid);
+//         const isPasswordValid = await player.isPasswordCorrect(password);
+//         console.log("ispassword is ",isPasswordValid);
 
-      if (!isPasswordValid) {
-      throw new ApiError(401, "Invalid password");
-          }
-            const {accessToken, refreshToken} = await generateAccessAndRefereshTokens(player._id);
+//       if (!isPasswordValid) {
+//       throw new ApiError(401, "Invalid password");
+//           }
+//             const {accessToken, refreshToken} = await generateAccessAndRefereshTokens(player._id);
 
-       const options = {
-        httpOnly: true,
-        secure: true
+//        const options = {
+//         httpOnly: true,
+//         secure: true
+//     }
+
+//     return res
+//     .status(200)
+//     .cookie("accessToken", accessToken, options)
+//     .cookie("refreshToken", refreshToken, options)
+//     .json(
+//         new ApiResponse(
+//             200, 
+//             {
+//                 player, accessToken, refreshToken
+//             },
+//             "User logged In Successfully"
+//         )
+//     );
+
+
+
+// });
+
+
+const loginplayer = asyncHandler(async (req, res) => {
+    const { username, password } = req.body;
+
+    if (!username?.trim()) {
+        throw new ApiError(400, "Username is required");
     }
+    if (!password?.trim()) {
+        throw new ApiError(400, "Password is required");
+    }
+
+    // Find player
+    const player = await Player.findOne({ username: username.toLowerCase() });
+
+    if (!player) {
+        throw new ApiError(404, "Player not found");
+    }
+
+    // Check password
+    const isPasswordValid = await player.isPasswordCorrect(password);
+    console.log("Is Password Valid:", isPasswordValid);
+
+    if (!isPasswordValid) {
+        throw new ApiError(401, "Invalid password");
+    }
+
+    // Generate Tokens
+    const { accessToken, refreshToken } = await generateAccessAndRefereshTokens(player._id);
+
+    const options = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production", // Development mein false rakho
+        sameSite: 'strict'
+    };
 
     return res
-    .status(200)
-    .cookie("accessToken", accessToken, options)
-    .cookie("refreshToken", refreshToken, options)
-    .json(
-        new ApiResponse(
-            200, 
-            {
-                player, accessToken, refreshToken
-            },
-            "User logged In Successfully"
-        )
-    );
-
-
-
+        .status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", refreshToken, options)
+        .json(
+            new ApiResponse(
+                200,
+                {
+                    player: {
+                        _id: player._id,
+                        name: player.name,
+                        username: player.username,
+                        playeravatar: player.playeravatar,
+                    },
+                    accessToken,
+                    refreshToken
+                },
+                "User logged in successfully"
+            )
+        );
 });
 
 const logoutplayer=asyncHandler(async(req,res)=>{
