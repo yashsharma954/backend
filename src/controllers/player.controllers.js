@@ -506,44 +506,78 @@ const search = asyncHandler(async (req, res) => {
 });
 
 // ====================== GET MY TOURNAMENTS ======================
-const getMyTournaments = asyncHandler(async (req, res) => {
-    const playerId = req.user._id;   // JWT se aayega
+// const getMyTournaments = asyncHandler(async (req, res) => {
+//     const playerId = req.user._id;   // JWT se aayega
 
+//     const tournaments = await Tournament.find({
+//         "rounds.players.members.playerId": playerId
+//     }).select("title game matchType status rounds").lean();
+
+//     const myTournaments = [];
+
+//     tournaments.forEach(tournament => {
+//         tournament.rounds.forEach(round => {
+//             const playerEntry = round.players.find(p => 
+//                 p.members.some(m => m.playerId.toString() === playerId.toString())
+//             );
+
+//             if (playerEntry) {
+//                 myTournaments.push({
+//                     _id: tournament._id,
+//                     title: tournament.title,
+//                     game: tournament.game,
+//                     matchType: tournament.matchType,
+//                     status: tournament.status,
+//                     currentRound: round.roundNumber,
+//                     teamName: playerEntry.teamName,
+//                     // Room details agar live match hai
+//                     roomId: round.matches?.[0]?.roomId || null,
+//                     roomPassword: round.matches?.[0]?.roomPassword || null,
+//                     joinedAt: playerEntry.joinedAt
+//                 });
+//             }
+//         });
+//     });
+
+//     return res.status(200).json(
+//         new ApiResponse(200, myTournaments, "My tournaments fetched successfully")
+//     );
+// });
+
+// tournament.controller.js
+
+const getMyTournaments= asyncHandler(async (req, res) => {
+    const { tournamentIds } = req.body;
+
+    // Validation
+    if (!tournamentIds || !Array.isArray(tournamentIds) || tournamentIds.length === 0) {
+        throw new ApiError(400, "tournamentIds array is required and cannot be empty");
+    }
+
+    // Fetch tournaments
     const tournaments = await Tournament.find({
-        "rounds.players.members.playerId": playerId
-    }).select("title game matchType status rounds").lean();
+        _id: { $in: tournamentIds }
+    })
+    .populate('host', 'name username')           // agar host info chahiye
+    .populate({
+        path: 'rounds.matches',                  // room details ke liye
+        select: 'roomId roomPassword status'
+    })
+    .select("title game matchType status totalSlots entryFee prizePool rounds createdAt")
+    .lean();   // performance ke liye
 
-    const myTournaments = [];
-
-    tournaments.forEach(tournament => {
-        tournament.rounds.forEach(round => {
-            const playerEntry = round.players.find(p => 
-                p.members.some(m => m.playerId.toString() === playerId.toString())
-            );
-
-            if (playerEntry) {
-                myTournaments.push({
-                    _id: tournament._id,
-                    title: tournament.title,
-                    game: tournament.game,
-                    matchType: tournament.matchType,
-                    status: tournament.status,
-                    currentRound: round.roundNumber,
-                    teamName: playerEntry.teamName,
-                    // Room details agar live match hai
-                    roomId: round.matches?.[0]?.roomId || null,
-                    roomPassword: round.matches?.[0]?.roomPassword || null,
-                    joinedAt: playerEntry.joinedAt
-                });
-            }
-        });
-    });
+    if (!tournaments || tournaments.length === 0) {
+        return res.status(200).json(
+            new ApiResponse(200, [], "No tournaments found for the given IDs")
+        );
+    }
 
     return res.status(200).json(
-        new ApiResponse(200, myTournaments, "My tournaments fetched successfully")
+        new ApiResponse(200, tournaments, "Tournaments fetched successfully")
     );
 });
 
+  // ya jo bhi export style hai
 export {getTournament};
 export {sendotp};
 export {verify};
