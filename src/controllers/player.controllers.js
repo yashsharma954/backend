@@ -546,34 +546,92 @@ const search = asyncHandler(async (req, res) => {
 
 // tournament.controller.js
 
-const getMyTournaments= asyncHandler(async (req, res) => {
-    const { tournamentIds } = req.body;
+// const getMyTournaments= asyncHandler(async (req, res) => {
+//     const { tournamentIds } = req.body;
 
-    // Validation
-    if (!tournamentIds || !Array.isArray(tournamentIds) || tournamentIds.length === 0) {
-        throw new ApiError(400, "tournamentIds array is required and cannot be empty");
+//     // Validation
+//     if (!tournamentIds || !Array.isArray(tournamentIds) || tournamentIds.length === 0) {
+//         throw new ApiError(400, "tournamentIds array is required and cannot be empty");
+//     }
+
+//     // Fetch tournaments
+//     const tournaments = await Tournament.find({
+//         _id: { $in: tournamentIds }
+//     })
+//     .populate('host', 'name username')           // agar host info chahiye
+//     .populate({
+//         path: 'rounds.matches',                  // room details ke liye
+//         select: 'roomId roomPassword status'
+//     })
+//     .select("title game matchType status totalSlots entryFee prizePool rounds createdAt")
+//     .lean();   // performance ke liye
+
+//     if (!tournaments || tournaments.length === 0) {
+//         return res.status(200).json(
+//             new ApiResponse(200, [], "No tournaments found for the given IDs")
+//         );
+//     }
+
+//     return res.status(200).json(
+//         new ApiResponse(200, tournaments, "Tournaments fetched successfully")
+//     );
+// });
+
+// getMyTournaments Controller
+const getMyTournaments = asyncHandler(async (req, res) => {
+    const playerId = req.user._id;
+
+    if (!playerId) {
+        throw new ApiError(401, "Unauthorized");
     }
 
-    // Fetch tournaments
-    const tournaments = await Tournament.find({
-        _id: { $in: tournamentIds }
-    })
-    .populate('host', 'name username')           // agar host info chahiye
-    .populate({
-        path: 'rounds.matches',                  // room details ke liye
-        select: 'roomId roomPassword status'
-    })
-    .select("title game matchType status totalSlots entryFee prizePool rounds createdAt")
-    .lean();   // performance ke liye
+    // Player se tournamentsJoined populate karke fetch karo
+    const player = await Player.findById(playerId)
+        .populate({
+            path: "tournamentsJoined",
+            select: "title game matchType status totalSlots entryFee prizePool rounds createdAt",
+            populate: {
+                path: "rounds.matches",
+                select: "roomId roomPassword status"
+            }
+        })
+        .lean();
 
-    if (!tournaments || tournaments.length === 0) {
+    if (!player) {
+        throw new ApiError(404, "Player not found");
+    }
+
+    const tournaments = player.tournamentsJoined || [];
+
+    if (tournaments.length === 0) {
         return res.status(200).json(
-            new ApiResponse(200, [], "No tournaments found for the given IDs")
+            new ApiResponse(200, [], "No tournaments joined yet")
         );
     }
 
+    // Extra processing for better frontend data
+    const myTournaments = tournaments.map(tournament => {
+        const latestRound = tournament.rounds?.[tournament.rounds.length - 1] || {};
+        const firstMatch = latestRound.matches?.[0] || {};
+
+        return {
+            _id: tournament._id,
+            title: tournament.title,
+            game: tournament.game,
+            matchType: tournament.matchType,
+            status: tournament.status,
+            totalSlots: tournament.totalSlots,
+            entryFee: tournament.entryFee,
+            prizePool: tournament.prizePool,
+            currentRound: latestRound.roundNumber || 1,
+            roomId: firstMatch.roomId || null,
+            roomPassword: firstMatch.roomPassword || null,
+            joinedAt: tournament.createdAt,
+        };
+    });
+
     return res.status(200).json(
-        new ApiResponse(200, tournaments, "Tournaments fetched successfully")
+        new ApiResponse(200, myTournaments, "My tournaments fetched successfully")
     );
 });
 
