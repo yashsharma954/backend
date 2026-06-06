@@ -26,7 +26,7 @@ router.route("/resendotp").post(resendotp);
 router.route("/tournament/:id").get(tournament);
 router.route("/join").post(join);
 router.route("/search").post(search);
-router.route("/mytournaments").get(verifyJWT, getMyTournaments);
+router.route("/mytournaments").get(verifyPlayerJWT, getMyTournaments);
 
 
 router.route("/registerplayer").post(
