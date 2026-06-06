@@ -96,19 +96,62 @@ export const verifyJWT = asyncHandler(async(req, _, next) => {
 //     }
 // });
 
+// export const verifyPlayerJWT = asyncHandler(async (req, _, next) => {
+//     try {
+//         const token = req.cookies?.accessToken || 
+//                      req.header("Authorization")?.replace("Bearer ", "").trim();
+//                      console.log("🔑 Received Token in Backend:", token ? "YES" : "NO");
+//         console.log("Token Length in Backend:", token?.length);
+
+//         if (!token) {
+//             throw new ApiError(401, "Authorization token is required");
+//         }
+
+//         const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET) ;
+
+//         const player = await Player.findById(decodedToken._id)
+//             .select("-password -refreshToken");
+
+//         if (!player) {
+//             throw new ApiError(401, "Player not found");
+//         }
+
+//         req.user = player;
+//         next();
+
+//     } catch (error) {
+//         console.error("JWT Verify Error:", error.name, error.message);
+        
+//         if (error.name === "TokenExpiredError") {
+//             throw new ApiError(401, "Token has expired. Please login again");
+//         }
+        
+//         throw new ApiError(401, "Invalid or expired token");
+//     }
+// });
+
+
 export const verifyPlayerJWT = asyncHandler(async (req, _, next) => {
     try {
-        const token = req.cookies?.accessToken || 
-                     req.header("Authorization")?.replace("Bearer ", "").trim();
-                     console.log("🔑 Received Token in Backend:", token ? "YES" : "NO");
-        console.log("Token Length in Backend:", token?.length);
+        // Token extract karo (Cookie ya Authorization Header se)
+        const token = 
+            req.cookies?.accessToken || 
+            req.header("Authorization")?.replace("Bearer ", "").trim();
+
+        console.log("🔑 Received Token:", token ? `YES (Length: ${token.length})` : "NO");
 
         if (!token) {
             throw new ApiError(401, "Authorization token is required");
         }
 
-        const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET) ;
+        // Verify JWT
+        const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
 
+        if (!decodedToken?._id) {
+            throw new ApiError(401, "Invalid token payload");
+        }
+
+        // Player fetch karo
         const player = await Player.findById(decodedToken._id)
             .select("-password -refreshToken");
 
@@ -116,16 +159,22 @@ export const verifyPlayerJWT = asyncHandler(async (req, _, next) => {
             throw new ApiError(401, "Player not found");
         }
 
+        // Attach user to request
         req.user = player;
         next();
 
     } catch (error) {
         console.error("JWT Verify Error:", error.name, error.message);
-        
+
         if (error.name === "TokenExpiredError") {
             throw new ApiError(401, "Token has expired. Please login again");
         }
-        
-        throw new ApiError(401, "Invalid or expired token");
+
+        if (error.name === "JsonWebTokenError") {
+            throw new ApiError(401, "Invalid token");
+        }
+
+        // Default error
+        throw new ApiError(401, error.message || "Invalid or expired token");
     }
 });
