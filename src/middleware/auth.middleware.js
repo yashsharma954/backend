@@ -2,6 +2,7 @@ import { ApiError } from "../utilis/ApiError.js";
 import { asyncHandler } from "../utilis/asyncHandler.js";
 import jwt from "jsonwebtoken"
 import { Host } from "../models/host.model.js";
+import { Player } from "../models/player.model.js";
 
 export const verifyJWT = asyncHandler(async(req, _, next) => {
     try {
