@@ -780,37 +780,141 @@ const result=asyncHandler(async(req,res)=>{
 // });
 
 
+const generateRoundMatches = async (tournament, roundIndex) => {
+    const round = tournament.rounds[roundIndex];
+    const players = round.players || [];
+    
+    if (players.length === 0) {
+        return round; // No players, no matches
+    }
+
+    const teamsPerMatch = round.teamsPerMatch || 5;
+    let playersToUse = [...players];
+
+    // Round 2+ ke liye only qualifying teams
+    if (round.roundNumber > 1 && round.qualifyingTeams > 0) {
+        playersToUse = playersToUse.slice(0, round.qualifyingTeams);
+    }
+
+    const totalMatches = round.totalMatches || 
+                        Math.ceil(playersToUse.length / teamsPerMatch);
+
+    const shuffledPlayers = [...playersToUse].sort(() => Math.random() - 0.5);
+    
+    const generatedMatches = [];
+
+    for (let i = 0; i < totalMatches; i++) {
+        const start = i * teamsPerMatch;
+        const matchPlayers = shuffledPlayers.slice(start, start + teamsPerMatch);
+
+        const teams = [];
+        for (let j = 0; j < teamsPerMatch; j++) {
+            if (matchPlayers[j]) {
+                teams.push({
+                    teamName: `Team ${String.fromCharCode(65 + j)}`, // A, B, C...
+                    players: [matchPlayers[j]], // Agar single player per team hai
+                    // Agar multiple players per team ho to yaha change karna
+                });
+            }
+        }
+
+        generatedMatches.push({
+            matchId: i + 1,
+            matchNumber: `Match ${i + 1}`,
+            status: round.roundNumber === 1 && i === 0 ? 'live' : 'upcoming',
+            players: matchPlayers,
+            teams: teams,
+            roomId: "",
+            password: "",
+            approved: false,
+            leaderboard: [],
+            createdAt: new Date()
+        });
+    }
+
+    // Update round with generated matches
+    round.matches = generatedMatches;
+    round.totalMatches = totalMatches;
+
+    // Save to database
+    await tournament.save();
+
+    return round;
+};
+
+// const getRoundDetails = asyncHandler(async (req, res) => {
+//     const { tournamentId, roundNumber } = req.params;
+
+//     console.log("🔍 Received:", { tournamentId, roundNumber }); // ← Debugging ke liye
+
+//     if (!tournamentId || !roundNumber) {
+//         throw new ApiError(400, "Tournament ID and Round Number are required");
+//     }
+
+//     // Find tournament
+//     const tournament = await Tournament.findById(tournamentId)
+//         .select("title rounds");   // sirf jaruri fields lo
+
+//     if (!tournament) {
+//         console.log("❌ Tournament not found with ID:", tournamentId);
+//         throw new ApiError(404, "Tournament not found");
+//     }
+
+//     console.log("✅ Tournament found, Total Rounds:", tournament.rounds?.length);
+
+//     // Find round
+//     const round = tournament.rounds.find(
+//         r => r.roundNumber === Number(roundNumber)
+//     );
+
+//     if (!round) {
+//         console.log("❌ Round not found. Round Number:", roundNumber);
+//         throw new ApiError(404, `Round ${roundNumber} not found in this tournament`);
+//     }
+
+//     console.log("✅ Round found successfully!");
+
+//     return res.status(200).json(
+//         new ApiResponse(
+//             200,
+//             { 
+//                 round: round,
+//                 tournamentId: tournament._id,
+//                 tournamentTitle: tournament.title 
+//             },
+//             `Round ${roundNumber} fetched successfully`
+//         )
+//     );
+// });
+
 const getRoundDetails = asyncHandler(async (req, res) => {
     const { tournamentId, roundNumber } = req.params;
-
-    console.log("🔍 Received:", { tournamentId, roundNumber }); // ← Debugging ke liye
 
     if (!tournamentId || !roundNumber) {
         throw new ApiError(400, "Tournament ID and Round Number are required");
     }
 
-    // Find tournament
     const tournament = await Tournament.findById(tournamentId)
-        .select("title rounds");   // sirf jaruri fields lo
+        .select("title rounds");
 
     if (!tournament) {
-        console.log("❌ Tournament not found with ID:", tournamentId);
         throw new ApiError(404, "Tournament not found");
     }
 
-    console.log("✅ Tournament found, Total Rounds:", tournament.rounds?.length);
-
-    // Find round
-    const round = tournament.rounds.find(
+    const roundIndex = tournament.rounds.findIndex(
         r => r.roundNumber === Number(roundNumber)
     );
 
-    if (!round) {
-        console.log("❌ Round not found. Round Number:", roundNumber);
-        throw new ApiError(404, `Round ${roundNumber} not found in this tournament`);
+    if (roundIndex === -1) {
+        throw new ApiError(404, `Round ${roundNumber} not found`);
     }
 
-    console.log("✅ Round found successfully!");
+    let round = tournament.rounds[roundIndex];
+
+    // 🔥 Agar matches already generated nahi hai to generate karo
+    if (!round.matches || round.matches.length === 0) {
+        round = await generateRoundMatches(tournament, roundIndex);
+    }
 
     return res.status(200).json(
         new ApiResponse(

@@ -186,7 +186,7 @@ matches: [
     roomPassword: String,
     startedAt: Date,
     completedAt: Date,
-    teams: [{ type: mongoose.Schema.Types.ObjectId, ref: 'TournamentTeam' }], // ya direct player data
+    teams: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Player' }], // ya direct player data
     result: [{
       teamName: String,
       rank: Number,
