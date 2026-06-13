@@ -178,23 +178,55 @@ const tournamentSchema = new mongoose.Schema({
     }
   ],
   // Inside rounds array
-matches: [
-  {
-    matchNumber: Number,
-    status: { type: String, enum: ["upcoming", "live", "completed"] },
+// matches: [
+//   {
+//     matchNumber: Number,
+//     status: { type: String, enum: ["upcoming", "live", "completed"] },
+//     roomId: String,
+//     roomPassword: String,
+//     startedAt: Date,
+//     completedAt: Date,
+//     teams: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Player' }], // ya direct player data
+//     result: [{
+//       teamName: String,
+//       rank: Number,
+//       points: Number,
+//       status: { type: String, enum: ["qualified", "eliminated"] }
+//     }]
+//   }
+// ]
+
+matches: [{
+    matchId: { type: Number, required: true },
+    matchNumber: { type: Number, required: true },        // ← Number rakho
+    status: { 
+        type: String, 
+        enum: ['upcoming', 'live', 'completed', 'cancelled'],
+        default: 'upcoming' 
+    },
+    players: [{ 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'Player' 
+    }],
+    teams: [{
+        teamName: String,
+        players: [{ 
+            type: mongoose.Schema.Types.ObjectId, 
+            ref: 'Player' 
+        }]
+    }],
     roomId: String,
-    roomPassword: String,
-    startedAt: Date,
-    completedAt: Date,
-    teams: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Player' }], // ya direct player data
-    result: [{
-      teamName: String,
-      rank: Number,
-      points: Number,
-      status: { type: String, enum: ["qualified", "eliminated"] }
-    }]
-  }
-]
+    password: String,
+    approved: { type: Boolean, default: false },
+    leaderboard: [{
+        // leaderboard schema yaha daal sakte ho
+        player: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
+        rank: Number,
+        kills: Number,
+        points: Number
+    }],
+    createdAt: { type: Date, default: Date.now }
+}]
 
     }
     

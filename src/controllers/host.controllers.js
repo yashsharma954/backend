@@ -780,50 +780,109 @@ const result=asyncHandler(async(req,res)=>{
 // });
 
 
+// const generateRoundMatches = async (tournament, roundIndex) => {
+//     const round = tournament.rounds[roundIndex];
+//     const players = round.players || [];
+    
+//     if (players.length === 0) {
+//         return round; // No players, no matches
+//     }
+
+//     const teamsPerMatch = round.teamsPerMatch || 5;
+//     let playersToUse = [...players];
+
+//     // Round 2+ ke liye only qualifying teams
+//     if (round.roundNumber > 1 && round.qualifyingTeams > 0) {
+//         playersToUse = playersToUse.slice(0, round.qualifyingTeams);
+//     }
+
+//     const totalMatches = round.totalMatches || 
+//                         Math.ceil(playersToUse.length / teamsPerMatch);
+
+//     const shuffledPlayers = [...playersToUse].sort(() => Math.random() - 0.5);
+    
+//     const generatedMatches = [];
+
+//     for (let i = 0; i < totalMatches; i++) {
+//         const start = i * teamsPerMatch;
+//         const matchPlayers = shuffledPlayers.slice(start, start + teamsPerMatch);
+
+//         const teams = [];
+//         for (let j = 0; j < teamsPerMatch; j++) {
+//             if (matchPlayers[j]) {
+//                 teams.push({
+//                     teamName: `Team ${String.fromCharCode(65 + j)}`, // A, B, C...
+//                     players: [matchPlayers[j]], // Agar single player per team hai
+//                     // Agar multiple players per team ho to yaha change karna
+//                 });
+//             }
+//         }
+
+//         generatedMatches.push({
+//             matchId: i + 1,
+//             matchNumber: `Match ${i + 1}`,
+//             status: round.roundNumber === 1 && i === 0 ? 'live' : 'upcoming',
+//             players: matchPlayers,
+//             teams: teams,
+//             roomId: "",
+//             password: "",
+//             approved: false,
+//             leaderboard: [],
+//             createdAt: new Date()
+//         });
+//     }
+
+//     // Update round with generated matches
+//     round.matches = generatedMatches;
+//     round.totalMatches = totalMatches;
+
+//     // Save to database
+//     await tournament.save();
+
+//     return round;
+// };
+
 const generateRoundMatches = async (tournament, roundIndex) => {
     const round = tournament.rounds[roundIndex];
-    const players = round.players || [];
     
-    if (players.length === 0) {
-        return round; // No players, no matches
-    }
+    if (!round) throw new Error("Round not found");
 
-    const teamsPerMatch = round.teamsPerMatch || 5;
+    const players = round.players || [];
+    const teamsPerMatch = Number(round.teamsPerMatch) || 5;
     let playersToUse = [...players];
 
-    // Round 2+ ke liye only qualifying teams
     if (round.roundNumber > 1 && round.qualifyingTeams > 0) {
-        playersToUse = playersToUse.slice(0, round.qualifyingTeams);
+        playersToUse = playersToUse.slice(0, Number(round.qualifyingTeams));
     }
 
     const totalMatches = round.totalMatches || 
                         Math.ceil(playersToUse.length / teamsPerMatch);
 
+    if (playersToUse.length === 0) {
+        round.matches = [];
+        round.totalMatches = 0;
+        await tournament.save();
+        return round;
+    }
+
     const shuffledPlayers = [...playersToUse].sort(() => Math.random() - 0.5);
-    
     const generatedMatches = [];
 
     for (let i = 0; i < totalMatches; i++) {
         const start = i * teamsPerMatch;
         const matchPlayers = shuffledPlayers.slice(start, start + teamsPerMatch);
 
-        const teams = [];
-        for (let j = 0; j < teamsPerMatch; j++) {
-            if (matchPlayers[j]) {
-                teams.push({
-                    teamName: `Team ${String.fromCharCode(65 + j)}`, // A, B, C...
-                    players: [matchPlayers[j]], // Agar single player per team hai
-                    // Agar multiple players per team ho to yaha change karna
-                });
-            }
-        }
+        const teams = matchPlayers.map((player, j) => ({
+            teamName: `Team ${String.fromCharCode(65 + j)}`,
+            players: [player._id || player]   // Sirf player ID bhejo
+        }));
 
         generatedMatches.push({
-            matchId: i + 1,
-            matchNumber: `Match ${i + 1}`,
+            matchId: i + 1,                    // Number
+            matchNumber: i + 1,                // ← Changed to Number
             status: round.roundNumber === 1 && i === 0 ? 'live' : 'upcoming',
-            players: matchPlayers,
-            teams: teams,
+            players: matchPlayers.map(p => p._id || p),   // Store only IDs
+            teams: teams,                                     // Array of objects
             roomId: "",
             password: "",
             approved: false,
@@ -832,13 +891,12 @@ const generateRoundMatches = async (tournament, roundIndex) => {
         });
     }
 
-    // Update round with generated matches
     round.matches = generatedMatches;
     round.totalMatches = totalMatches;
 
-    // Save to database
     await tournament.save();
 
+    console.log(`✅ ${generatedMatches.length} matches generated for round ${round.roundNumber}`);
     return round;
 };
 
