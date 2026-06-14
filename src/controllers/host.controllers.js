@@ -1185,6 +1185,52 @@ const startMatch = asyncHandler(async (req, res) => {
     );
 });
 
+const updateMatchRoomDetails = asyncHandler(async (req, res) => {
+    const { tournamentId, roundNumber, matchId } = req.params;
+    const { roomId, password } = req.body;
+
+    if (!roomId) {
+        throw new ApiError(400, "Room ID is required");
+    }
+
+    const tournament = await Tournament.findById(tournamentId);
+    if (!tournament) {
+        throw new ApiError(404, "Tournament not found");
+    }
+
+    const roundIndex = tournament.rounds.findIndex(
+        r => r.roundNumber === Number(roundNumber)
+    );
+
+    if (roundIndex === -1) {
+        throw new ApiError(404, "Round not found");
+    }
+
+    const round = tournament.rounds[roundIndex];
+    const matchIndex = round.matches.findIndex(
+        m => m.matchId === Number(matchId)
+    );
+
+    if (matchIndex === -1) {
+        throw new ApiError(404, "Match not found");
+    }
+
+    // Update room details
+    round.matches[matchIndex].roomId = roomId;
+    round.matches[matchIndex].password = password || "";
+    round.matches[matchIndex].approved = true; // Auto approve when room is set
+
+    await tournament.save();
+
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            { match: round.matches[matchIndex] },
+            "Room details updated successfully"
+        )
+    );
+});
+
 
 export {logouthost};
 export {loginhost};
@@ -1205,3 +1251,4 @@ export {result};
 export { getRoundDetails };
 export { getMatchDetails };
 export {startMatch};
+export {updateMatchRoomDetails};

@@ -20,7 +20,7 @@ import {result} from "../controllers/host.controllers.js";
 import { getRoundDetails } from "../controllers/host.controllers.js";
 import { getMatchDetails } from "../controllers/host.controllers.js";
 import { startMatch } from "../controllers/host.controllers.js";
-
+import { updateMatchRoomDetails } from "../controllers/host.controllers.js";
 
 
 const router=Router();
@@ -63,7 +63,13 @@ router.route("/tournaments/:tournamentId/round/:roundNumber/match/:matchId")
 
     // Match Room ID/Password Route
 router.route("/tournaments/:tournamentId/round/:roundNumber/match/:matchId/start")
-     .post( startMatch);     // ya bina verifyJWT ke test ke liye
+     .post( startMatch); 
+         // ya bina verifyJWT ke test ke liye
+
+router.route(
+  '/tournaments/:tournamentId/round/:roundNumber/match/:matchId/room')
+            .patch(updateMatchRoomDetails);
+
 
 
 
