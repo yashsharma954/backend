@@ -696,7 +696,7 @@ const getMyTournaments = asyncHandler(async (req, res) => {
             prizePool: tournament.prizePool,
             currentRound: latestRound.roundNumber || 1,
             roomId: firstMatch.roomId || null,
-            roomPassword: firstMatch.roomPassword || null,
+            roomPassword: firstMatch.password || null,
             joinedAt: tournament.createdAt,
         };
     });
