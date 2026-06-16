@@ -708,6 +708,7 @@ const search = asyncHandler(async (req, res) => {
 
 const getMyTournaments = asyncHandler(async (req, res) => {
     const playerId = req.user._id;
+    console.log(playerId);
 
     if (!playerId) {
         throw new ApiError(401, "Unauthorized");
