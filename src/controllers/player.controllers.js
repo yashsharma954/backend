@@ -793,9 +793,103 @@ const search = asyncHandler(async (req, res) => {
 //     );
 // });
 
+// const getMyTournaments = asyncHandler(async (req, res) => {
+//     const playerId = req.user._id;
+//     console.log("Player ID:", playerId);
+
+//     if (!playerId) {
+//         throw new ApiError(401, "Unauthorized");
+//     }
+
+//     const player = await Player.findById(playerId)
+//         .populate({
+//             path: "tournamentsJoined",
+//             select: "title game matchType status totalSlots entryFee prizePool rounds createdAt",
+//             populate: [
+//                 {
+//                     path: "rounds",
+//                     select: "roundNumber name teamsPerMatch status players",
+//                     populate: [
+//                         {
+//                             path: "matches",
+//                             select: "matchId matchNumber status players teams roomId password approved leaderboard createdAt"
+//                         }
+//                     ]
+//                 }
+//             ]
+//         })
+//         .lean();
+
+//     if (!player) {
+//         throw new ApiError(404, "Player not found");
+//     }
+
+//     const tournaments = player.tournamentsJoined || [];
+//     const myJoinedMatches = [];
+
+//     tournaments.forEach(tournament => {
+//         tournament.rounds?.forEach(round => {
+
+//             // Find if player is in any team of this round
+//             const playerTeam = round.players?.find(team => 
+//                 team.members?.some((member) => 
+//                     member.playerId?.toString() === playerId.toString()
+//                 )
+//             );
+
+//             if (!playerTeam) return; // Player not in this round
+
+//             round.matches?.forEach(match => {
+//                 // Check if player's team is in this match
+//                 const isPlayerTeamInMatch = match.players?.some((teamId) => 
+//                     teamId.toString() === playerTeam._id.toString()
+//                 );
+
+//                 if (isPlayerTeamInMatch) {
+//                     myJoinedMatches.push({
+//                         _id: match._id,
+//                         tournamentId: tournament._id,
+//                         tournamentTitle: tournament.title,
+//                         game: tournament.game,
+//                         matchType: tournament.matchType,
+//                         roundNumber: round.roundNumber,
+//                         roundName: round.name,
+//                         matchNumber: match.matchNumber,
+//                         matchId: match.matchId,
+//                         status: match.status || round.status || tournament.status,
+//                         teamName: playerTeam.teamName || "My Team",
+//                         roomId: match.roomId,
+//                         roomPassword: match.password,
+//                         approved: match.approved,
+//                         joinedAt: tournament.createdAt,
+//                         totalTeamsInMatch: match.players?.length || 0,
+//                     });
+//                 }
+//             });
+//         });
+//     });
+
+//     // Sort by latest
+//     myJoinedMatches.sort((a, b) => 
+//         new Date(b.joinedAt).getTime() - new Date(a.joinedAt).getTime()
+//     );
+
+//     console.log(`Found ${myJoinedMatches.length} joined matches for player`);
+
+//     return res.status(200).json(
+//         new ApiResponse(
+//             200, 
+//             myJoinedMatches, 
+//             myJoinedMatches.length > 0 
+//                 ? "My joined matches fetched successfully" 
+//                 : "No active matches found"
+//         )
+//     );
+// });
+
 const getMyTournaments = asyncHandler(async (req, res) => {
     const playerId = req.user._id;
-    console.log("Player ID:", playerId);
+    console.log("🔍 Player ID:", playerId);
 
     if (!playerId) {
         throw new ApiError(401, "Unauthorized");
@@ -828,45 +922,88 @@ const getMyTournaments = asyncHandler(async (req, res) => {
     const myJoinedMatches = [];
 
     tournaments.forEach(tournament => {
-        tournament.rounds?.forEach(round => {
+        let hasAnyMatch = false;
 
-            // Find if player is in any team of this round
+        tournament.rounds?.forEach(round => {
+            // Check if player is in this round
             const playerTeam = round.players?.find(team => 
                 team.members?.some((member) => 
                     member.playerId?.toString() === playerId.toString()
                 )
             );
 
-            if (!playerTeam) return; // Player not in this round
+            if (!playerTeam) return;
 
-            round.matches?.forEach(match => {
-                // Check if player's team is in this match
-                const isPlayerTeamInMatch = match.players?.some((teamId) => 
-                    teamId.toString() === playerTeam._id.toString()
-                );
+            // If matches exist, check which match the player is in
+            if (round.matches && round.matches.length > 0) {
+                round.matches.forEach(match => {
+                    const isPlayerTeamInMatch = match.players?.some((teamId) => 
+                        teamId?.toString() === playerTeam._id?.toString()
+                    );
 
-                if (isPlayerTeamInMatch) {
-                    myJoinedMatches.push({
-                        _id: match._id,
-                        tournamentId: tournament._id,
-                        tournamentTitle: tournament.title,
-                        game: tournament.game,
-                        matchType: tournament.matchType,
-                        roundNumber: round.roundNumber,
-                        roundName: round.name,
-                        matchNumber: match.matchNumber,
-                        matchId: match.matchId,
-                        status: match.status || round.status || tournament.status,
-                        teamName: playerTeam.teamName || "My Team",
-                        roomId: match.roomId,
-                        roomPassword: match.password,
-                        approved: match.approved,
-                        joinedAt: tournament.createdAt,
-                        totalTeamsInMatch: match.players?.length || 0,
-                    });
-                }
-            });
+                    if (isPlayerTeamInMatch) {
+                        hasAnyMatch = true;
+                        myJoinedMatches.push({
+                            _id: match._id || tournament._id,
+                            tournamentId: tournament._id,
+                            tournamentTitle: tournament.title,
+                            game: tournament.game,
+                            matchType: tournament.matchType,
+                            roundNumber: round.roundNumber,
+                            roundName: round.name,
+                            matchNumber: match.matchNumber,
+                            matchId: match.matchId,
+                            status: match.status || round.status || tournament.status,
+                            teamName: playerTeam.teamName || "My Team",
+                            roomId: match.roomId,
+                            roomPassword: match.password,
+                            approved: match.approved,
+                            joinedAt: tournament.createdAt,
+                        });
+                    }
+                });
+            } 
+            // Agar match abhi generate nahi hua to bhi tournament dikhao
+            else {
+                hasAnyMatch = true;
+                myJoinedMatches.push({
+                    _id: tournament._id,
+                    tournamentId: tournament._id,
+                    tournamentTitle: tournament.title,
+                    game: tournament.game,
+                    matchType: tournament.matchType,
+                    roundNumber: round.roundNumber,
+                    roundName: round.name,
+                    status: round.status || tournament.status,
+                    teamName: playerTeam.teamName || "My Team",
+                    joinedAt: tournament.createdAt,
+                    message: "Match not assigned yet"
+                });
+            }
         });
+
+        // Agar round mein player hai lekin koi match nahi mila to overall tournament dikhaye
+        if (!hasAnyMatch && tournament.rounds?.length > 0) {
+            const firstRound = tournament.rounds[0];
+            const playerTeam = firstRound.players?.find(team => 
+                team.members?.some((m) => m.playerId?.toString() === playerId.toString())
+            );
+
+            if (playerTeam) {
+                myJoinedMatches.push({
+                    _id: tournament._id,
+                    tournamentId: tournament._id,
+                    tournamentTitle: tournament.title,
+                    game: tournament.game,
+                    matchType: tournament.matchType,
+                    roundNumber: firstRound.roundNumber,
+                    status: tournament.status,
+                    teamName: playerTeam.teamName,
+                    joinedAt: tournament.createdAt,
+                    message: "Waiting for match assignment"
+                });
+            }
+        }
     });
 
     // Sort by latest
@@ -874,16 +1011,10 @@ const getMyTournaments = asyncHandler(async (req, res) => {
         new Date(b.joinedAt).getTime() - new Date(a.joinedAt).getTime()
     );
 
-    console.log(`Found ${myJoinedMatches.length} joined matches for player`);
+    console.log(`✅ Total joined items found: ${myJoinedMatches.length}`);
 
     return res.status(200).json(
-        new ApiResponse(
-            200, 
-            myJoinedMatches, 
-            myJoinedMatches.length > 0 
-                ? "My joined matches fetched successfully" 
-                : "No active matches found"
-        )
+        new ApiResponse(200, myJoinedMatches, "My tournaments fetched successfully")
     );
 });
 
