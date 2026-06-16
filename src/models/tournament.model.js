@@ -218,13 +218,19 @@ matches: [{
     roomId: String,
     password: String,
     approved: { type: Boolean, default: false },
-    leaderboard: [{
-        // leaderboard schema yaha daal sakte ho
-        player: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
-        rank: Number,
-        kills: Number,
-        points: Number
-    }],
+
+   leaderboard: [{
+    playerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
+    teamId: { type: mongoose.Schema.Types.ObjectId },
+    totalKills: Number,
+    points: Number,
+    rank: Number,
+    screenshot: String,
+    status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+    submittedAt: Date,
+  }],
+  
+  qualifiedTeams: [mongoose.Schema.Types.ObjectId],
     createdAt: { type: Date, default: Date.now }
 }]
 

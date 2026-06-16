@@ -13,6 +13,7 @@ import { loginplayer } from "../controllers/player.controllers.js";
 import { logoutplayer } from "../controllers/player.controllers.js";
 import { verifyJWT } from "../middleware/auth.middleware.js";
 import { upload } from "../middleware/multer.middleware.js";
+import { uploadLeaderboard } from "../controllers/player.controllers.js";
 
 const router=Router();
 
@@ -39,6 +40,16 @@ router.route("/registerplayer").post(
     registerplayer);
    router.route("/loginplayer").post(loginplayer); 
    router.route("/logoutplayer").post(verifyJWT,logoutplayer);
+   router.route("/match/:matchId/leaderboard").post(verifyPlayerJWT,
+    upload.fields([
+        {
+            name: "screenshot",
+            maxCount: 1
+        }, 
+    ]),
+ uploadLeaderboard
+   );
+
 
 
 

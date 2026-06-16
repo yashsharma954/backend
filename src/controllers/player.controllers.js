@@ -1017,6 +1017,80 @@ const getMyTournaments = asyncHandler(async (req, res) => {
         new ApiResponse(200, myJoinedMatches, "My tournaments fetched successfully")
     );
 });
+const uploadLeaderboard = asyncHandler(async (req, res) => {
+    // Get data from frontend
+    const { matchId } = req.params;
+    const { totalKills, points, rank } = req.body;
+    const playerId = req.user?.id || req.user?._id;   // from protect middleware
+
+    // Validation
+    if (!matchId) {
+        throw new ApiError(400, "Match ID is required");
+    }
+    if (!totalKills || !points) {
+        throw new ApiError(400, "Total Kills and Points are required");
+    }
+
+    // Handle screenshot
+    let screenshotUrl = "";
+    const screenshotLocalPath = req.files?.screenshot?.[0]?.path;
+
+    if (screenshotLocalPath) {
+        const screenshot = await uploadOnCloudinary(screenshotLocalPath);
+        screenshotUrl = screenshot?.url || "";
+    }
+
+    // Find tournament that contains this match
+    const tournament = await Tournament.findOne({
+        "rounds.matches._id": matchId
+    });
+
+    if (!tournament) {
+        throw new ApiError(404, "Match not found");
+    }
+
+    let matchUpdated = false;
+
+    // Loop through rounds and matches to find the correct one
+    for (let round of tournament.rounds) {
+        const matchIndex = round.matches.findIndex(m => m._id.toString() === matchId);
+
+        if (matchIndex !== -1) {
+            const match = round.matches[matchIndex];
+
+            // Check if player is part of this match
+            const playerIndex = match.players.findIndex(
+                p => p.player.toString() === playerId.toString()
+            );
+
+            if (playerIndex === -1) {
+                throw new ApiError(403, "You are not authorized for this match");
+            }
+
+            // Update leaderboard data
+            match.players[playerIndex].leaderboard = {
+                totalKills: parseInt(totalKills),
+                points: parseInt(points),
+                rank: rank ? parseInt(rank) : null,
+                screenshot: screenshotUrl,
+                submittedAt: new Date()
+            };
+
+            matchUpdated = true;
+            break;
+        }
+    }
+
+    if (!matchUpdated) {
+        throw new ApiError(404, "Match not found in tournament");
+    }
+
+    await tournament.save();
+
+    return res.status(200).json(
+        new ApiResponse(200, null, "Leaderboard uploaded successfully")
+    );
+});
 
   // ya jo bhi export style hai
 export {getTournament};
@@ -1030,5 +1104,6 @@ export {getMyTournaments};
 export {registerplayer};
 export {loginplayer};
 export {logoutplayer};
+export {uploadLeaderboard};
 
 
