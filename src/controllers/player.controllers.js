@@ -260,53 +260,6 @@ const registerplayer=asyncHandler(async(req,res)=>{
 
 })
 
-// const loginplayer=asyncHandler(async(req,res)=>{
-//     const {username,password}=req.body;
-//     if (!username ) {
-//   throw new ApiError(400, "Username required");
-//     }
-
-//     if(!password){
-//         throw new ApiError(400,"password required");
-//     }
-
-//      const player = await Player.findOne({username });
-       
-//        if (!player) {
-//       throw new ApiError(404, "Host not found");
-//        }
-
-//         const isPasswordValid = await player.isPasswordCorrect(password);
-//         console.log("ispassword is ",isPasswordValid);
-
-//       if (!isPasswordValid) {
-//       throw new ApiError(401, "Invalid password");
-//           }
-//             const {accessToken, refreshToken} = await generateAccessAndRefereshTokens(player._id);
-
-//        const options = {
-//         httpOnly: true,
-//         secure: true
-//     }
-
-//     return res
-//     .status(200)
-//     .cookie("accessToken", accessToken, options)
-//     .cookie("refreshToken", refreshToken, options)
-//     .json(
-//         new ApiResponse(
-//             200, 
-//             {
-//                 player, accessToken, refreshToken
-//             },
-//             "User logged In Successfully"
-//         )
-//     );
-
-
-
-// });
-
 
 const loginplayer = asyncHandler(async (req, res) => {
     const { username, password } = req.body;
@@ -393,75 +346,6 @@ const logoutplayer=asyncHandler(async(req,res)=>{
 
 
 
-// const join = asyncHandler(async (req, res) => {
-//     const { teamName, members, playerId, tournamentId } = req.body;
-
-//     if (!teamName) throw new ApiError(400, "teamName is required");
-//     if (!members || !Array.isArray(members) || members.length === 0) {
-//         throw new ApiError(400, "members array is required");
-//     }
-//     if (!playerId) throw new ApiError(400, "playerId is required");
-//     if (!tournamentId) throw new ApiError(400, "tournamentId is required");
-
-//     // Find Player
-//     const user = await Player.findById(playerId);
-//     if (!user) throw new ApiError(404, "Player not found");
-
-//     // Find Tournament
-//     const tournament = await Tournament.findById(tournamentId);
-//     if (!tournament) throw new ApiError(404, "Tournament not found");
-
-    
-
-//     // Check if already joined
-//     const alreadyJoined = tournament.rounds[0]?.players?.some(
-//         p => p.members?.some(m => m.playerId.toString() === playerId.toString())
-//     );
-
-//     if (alreadyJoined) {
-//         throw new ApiError(400, "You have already joined this tournament");
-//     }
-
-//     // Add player to Round 1
-//     const playerData = {
-//         teamName,
-//         members: members.map((m) => ({
-//             playerId: user._id,
-//             ign: m.ign,
-//         })),
-//         payment: true,
-//         joinedAt: new Date(),
-//         currentRound: 1,
-//         status: "active",
-//         totalPoints: 0
-//     };
-
-//     if (!tournament.rounds || tournament.rounds.length === 0) {
-//         throw new ApiError(400, "No rounds found in tournament");
-//     }
-
-//     tournament.rounds[0].players.push(playerData);
-//     tournament.currentTeams += 1;
-
-//     await tournament.save();
-
-//     // Update player document
-//     user.teamname = teamName;
-//     user.teammates = members.map((m) => ({ ingameName: m.ign }));
-//     await user.save();
-
-//     // ✅ Correct Response
-//     return res.status(201).json(
-//         new ApiResponse(
-//             201,
-//             {
-//                 user
-//                          // ← Yeh frontend ko chahiye
-//             },
-//             "Successfully joined tournament in Round 1"
-//         )
-//     );
-// });
 
 const join = asyncHandler(async (req, res) => {
     const { teamName, members, playerId, tournamentId } = req.body;
@@ -575,318 +459,6 @@ const search = asyncHandler(async (req, res) => {
     new ApiResponse(200, tournaments, "Filtered tournaments")
   );
 });
-
-// ====================== GET MY TOURNAMENTS ======================
-// const getMyTournaments = asyncHandler(async (req, res) => {
-//     const playerId = req.user._id;   // JWT se aayega
-
-//     const tournaments = await Tournament.find({
-//         "rounds.players.members.playerId": playerId
-//     }).select("title game matchType status rounds").lean();
-
-//     const myTournaments = [];
-
-//     tournaments.forEach(tournament => {
-//         tournament.rounds.forEach(round => {
-//             const playerEntry = round.players.find(p => 
-//                 p.members.some(m => m.playerId.toString() === playerId.toString())
-//             );
-
-//             if (playerEntry) {
-//                 myTournaments.push({
-//                     _id: tournament._id,
-//                     title: tournament.title,
-//                     game: tournament.game,
-//                     matchType: tournament.matchType,
-//                     status: tournament.status,
-//                     currentRound: round.roundNumber,
-//                     teamName: playerEntry.teamName,
-//                     // Room details agar live match hai
-//                     roomId: round.matches?.[0]?.roomId || null,
-//                     roomPassword: round.matches?.[0]?.roomPassword || null,
-//                     joinedAt: playerEntry.joinedAt
-//                 });
-//             }
-//         });
-//     });
-
-//     return res.status(200).json(
-//         new ApiResponse(200, myTournaments, "My tournaments fetched successfully")
-//     );
-// });
-
-// tournament.controller.js
-
-// const getMyTournaments= asyncHandler(async (req, res) => {
-//     const { tournamentIds } = req.body;
-
-//     // Validation
-//     if (!tournamentIds || !Array.isArray(tournamentIds) || tournamentIds.length === 0) {
-//         throw new ApiError(400, "tournamentIds array is required and cannot be empty");
-//     }
-
-//     // Fetch tournaments
-//     const tournaments = await Tournament.find({
-//         _id: { $in: tournamentIds }
-//     })
-//     .populate('host', 'name username')           // agar host info chahiye
-//     .populate({
-//         path: 'rounds.matches',                  // room details ke liye
-//         select: 'roomId roomPassword status'
-//     })
-//     .select("title game matchType status totalSlots entryFee prizePool rounds createdAt")
-//     .lean();   // performance ke liye
-
-//     if (!tournaments || tournaments.length === 0) {
-//         return res.status(200).json(
-//             new ApiResponse(200, [], "No tournaments found for the given IDs")
-//         );
-//     }
-
-//     return res.status(200).json(
-//         new ApiResponse(200, tournaments, "Tournaments fetched successfully")
-//     );
-// });
-
-// getMyTournaments Controller
-// const getMyTournaments = asyncHandler(async (req, res) => {
-//     const playerId = req.user._id;
-
-//     if (!playerId) {
-//         throw new ApiError(401, "Unauthorized");
-//     }
-
-//     // Player se tournamentsJoined populate karke fetch karo
-//     const player = await Player.findById(playerId)
-//         .populate({
-//             path: "tournamentsJoined",
-//             select: "title game matchType status totalSlots entryFee prizePool rounds createdAt",
-//             populate: {
-//                 path: "rounds.matches",
-//                 select: "roomId roomPassword status"
-//             }
-//         })
-//         .lean();
-
-//     if (!player) {
-//         throw new ApiError(404, "Player not found");
-//     }
-
-//     const tournaments = player.tournamentsJoined || [];
-
-//     if (tournaments.length === 0) {
-//         return res.status(200).json(
-//             new ApiResponse(200, [], "No tournaments joined yet")
-//         );
-//     }
-
-//     // Extra processing for better frontend data
-//     const myTournaments = tournaments.map(tournament => {
-//         const latestRound = tournament.rounds?.[tournament.rounds.length - 1] || {};
-//         const firstMatch = latestRound.matches?.[0] || {};
-
-//         return {
-//             _id: tournament._id,
-//             title: tournament.title,
-//             game: tournament.game,
-//             matchType: tournament.matchType,
-//             status: tournament.status,
-//             totalSlots: tournament.totalSlots,
-//             entryFee: tournament.entryFee,
-//             prizePool: tournament.prizePool,
-//             currentRound: latestRound.roundNumber || 1,
-//             roomId: firstMatch.roomId || null,
-//             roomPassword: firstMatch.password || null,
-//             joinedAt: tournament.createdAt,
-//         };
-//     });
-
-//     return res.status(200).json(
-//         new ApiResponse(200, myTournaments, "My tournaments fetched successfully")
-//     );
-// });
-
-// const getMyTournaments = asyncHandler(async (req, res) => {
-//     const playerId = req.user._id;
-//     console.log(playerId);
-
-//     if (!playerId) {
-//         throw new ApiError(401, "Unauthorized");
-//     }
-
-//     const player = await Player.findById(playerId)
-//         .populate({
-//             path: "tournamentsJoined",
-//             select: "title game matchType status totalSlots entryFee prizePool rounds createdAt",
-//             populate: [
-//                 {
-//                     path: "rounds",
-//                     select: "roundNumber name teamsPerMatch status players",
-//                     populate: [
-//                         {
-//                             path: "matches",
-//                             select: "matchId matchNumber status players teams roomId password approved leaderboard createdAt"
-//                         }
-//                     ]
-//                 }
-//             ]
-//         })
-//         .lean();
-
-//     if (!player) {
-//         throw new ApiError(404, "Player not found");
-//     }
-
-//     const tournaments = player.tournamentsJoined || [];
-//     const myJoinedMatches = [];
-
-//     tournaments.forEach(tournament => {
-//         tournament.rounds?.forEach(round => {
-//             round.matches?.forEach(match => {
-//                 // Check if this match contains the current player
-//                 const isPlayerInMatch = match.players?.some((pId) => 
-//                     pId.toString() === playerId.toString()
-//                 );
-
-//                 if (isPlayerInMatch) {
-//                     // Find player's team
-//                     const playerTeam = round.players?.find(team => 
-//                         team.members?.some((m) => m.playerId.toString() === playerId.toString())
-//                     );
-
-//                     myJoinedMatches.push({
-//                         _id: match._id,
-//                         tournamentId: tournament._id,
-//                         tournamentTitle: tournament.title,
-//                         game: tournament.game,
-//                         matchType: tournament.matchType,
-//                         roundNumber: round.roundNumber,
-//                         roundName: round.name,
-//                         matchNumber: match.matchNumber,
-//                         matchId: match.matchId,
-//                         status: match.status || round.status || tournament.status,
-//                         teamName: playerTeam?.teamName || "My Team",
-//                         roomId: match.roomId,
-//                         roomPassword: match.password,           // ← Important
-//                         approved: match.approved,
-//                         joinedAt: tournament.createdAt,
-//                         totalTeamsInMatch: match.players?.length || 0,
-//                     });
-//                 }
-//             });
-//         });
-//     });
-
-//     // Sort by latest first
-//     myJoinedMatches.sort((a, b) => 
-//         new Date(b.joinedAt).getTime() - new Date(a.joinedAt).getTime()
-//     );
-
-//     return res.status(200).json(
-//         new ApiResponse(
-//             200, 
-//             myJoinedMatches, 
-//             myJoinedMatches.length > 0 
-//                 ? "My joined matches fetched successfully" 
-//                 : "No active matches found"
-//         )
-//     );
-// });
-
-// const getMyTournaments = asyncHandler(async (req, res) => {
-//     const playerId = req.user._id;
-//     console.log("Player ID:", playerId);
-
-//     if (!playerId) {
-//         throw new ApiError(401, "Unauthorized");
-//     }
-
-//     const player = await Player.findById(playerId)
-//         .populate({
-//             path: "tournamentsJoined",
-//             select: "title game matchType status totalSlots entryFee prizePool rounds createdAt",
-//             populate: [
-//                 {
-//                     path: "rounds",
-//                     select: "roundNumber name teamsPerMatch status players",
-//                     populate: [
-//                         {
-//                             path: "matches",
-//                             select: "matchId matchNumber status players teams roomId password approved leaderboard createdAt"
-//                         }
-//                     ]
-//                 }
-//             ]
-//         })
-//         .lean();
-
-//     if (!player) {
-//         throw new ApiError(404, "Player not found");
-//     }
-
-//     const tournaments = player.tournamentsJoined || [];
-//     const myJoinedMatches = [];
-
-//     tournaments.forEach(tournament => {
-//         tournament.rounds?.forEach(round => {
-
-//             // Find if player is in any team of this round
-//             const playerTeam = round.players?.find(team => 
-//                 team.members?.some((member) => 
-//                     member.playerId?.toString() === playerId.toString()
-//                 )
-//             );
-
-//             if (!playerTeam) return; // Player not in this round
-
-//             round.matches?.forEach(match => {
-//                 // Check if player's team is in this match
-//                 const isPlayerTeamInMatch = match.players?.some((teamId) => 
-//                     teamId.toString() === playerTeam._id.toString()
-//                 );
-
-//                 if (isPlayerTeamInMatch) {
-//                     myJoinedMatches.push({
-//                         _id: match._id,
-//                         tournamentId: tournament._id,
-//                         tournamentTitle: tournament.title,
-//                         game: tournament.game,
-//                         matchType: tournament.matchType,
-//                         roundNumber: round.roundNumber,
-//                         roundName: round.name,
-//                         matchNumber: match.matchNumber,
-//                         matchId: match.matchId,
-//                         status: match.status || round.status || tournament.status,
-//                         teamName: playerTeam.teamName || "My Team",
-//                         roomId: match.roomId,
-//                         roomPassword: match.password,
-//                         approved: match.approved,
-//                         joinedAt: tournament.createdAt,
-//                         totalTeamsInMatch: match.players?.length || 0,
-//                     });
-//                 }
-//             });
-//         });
-//     });
-
-//     // Sort by latest
-//     myJoinedMatches.sort((a, b) => 
-//         new Date(b.joinedAt).getTime() - new Date(a.joinedAt).getTime()
-//     );
-
-//     console.log(`Found ${myJoinedMatches.length} joined matches for player`);
-
-//     return res.status(200).json(
-//         new ApiResponse(
-//             200, 
-//             myJoinedMatches, 
-//             myJoinedMatches.length > 0 
-//                 ? "My joined matches fetched successfully" 
-//                 : "No active matches found"
-//         )
-//     );
-// });
-
 const getMyTournaments = asyncHandler(async (req, res) => {
     const playerId = req.user._id;
     console.log("🔍 Player ID:", playerId);
@@ -1017,13 +589,95 @@ const getMyTournaments = asyncHandler(async (req, res) => {
         new ApiResponse(200, myJoinedMatches, "My tournaments fetched successfully")
     );
 });
+// const uploadLeaderboard = asyncHandler(async (req, res) => {
+//     // Get data from frontend
+//     const { matchId } = req.params;
+//     const { totalKills, points, rank } = req.body;
+//     const playerId = req.user?.id || req.user?._id;   // from protect middleware
+
+//     // Validation
+//     if (!matchId) {
+//         throw new ApiError(400, "Match ID is required");
+//     }
+//     if (!totalKills || !points) {
+//         throw new ApiError(400, "Total Kills and Points are required");
+//     }
+
+//     // Handle screenshot
+//     let screenshotUrl = "";
+//     const screenshotLocalPath = req.files?.screenshot?.[0]?.path;
+
+//     if (screenshotLocalPath) {
+//         const screenshot = await uploadOnCloudinary(screenshotLocalPath);
+//         screenshotUrl = screenshot?.url || "";
+//     }
+
+//     // Find tournament that contains this match
+//     const tournament = await Tournament.findOne({
+//         "rounds.matches._id": matchId
+//     });
+
+//     if (!tournament) {
+//         throw new ApiError(404, "Match not found");
+//     }
+
+//     let matchUpdated = false;
+
+//     // Loop through rounds and matches to find the correct one
+//     for (let round of tournament.rounds) {
+//         const matchIndex = round.matches.findIndex(m => m._id.toString() === matchId);
+
+//         if (matchIndex !== -1) {
+//             const match = round.matches[matchIndex];
+
+//             // Check if player is part of this match
+//             const playerIndex = match.players.findIndex(
+//                 p => p.player.toString() === playerId.toString()
+//             );
+
+//             if (playerIndex === -1) {
+//                 throw new ApiError(403, "You are not authorized for this match");
+//             }
+
+//             // Update leaderboard data
+//             match.players[playerIndex].leaderboard = {
+//                 totalKills: parseInt(totalKills),
+//                 points: parseInt(points),
+//                 rank: rank ? parseInt(rank) : null,
+//                 screenshot: screenshotUrl,
+//                 submittedAt: new Date()
+//             };
+
+//             matchUpdated = true;
+//             break;
+//         }
+//     }
+
+//     if (!matchUpdated) {
+//         throw new ApiError(404, "Match not found in tournament");
+//     }
+
+//     await tournament.save();
+
+//     return res.status(200).json(
+//         new ApiResponse(200, null, "Leaderboard uploaded successfully")
+//     );
+// });
+
 const uploadLeaderboard = asyncHandler(async (req, res) => {
-    // Get data from frontend
+    
     const { matchId } = req.params;
     const { totalKills, points, rank } = req.body;
-    const playerId = req.user?.id || req.user?._id;   // from protect middleware
+    
+    const playerId = req.user?._id || req.user?.id;
+
+    console.log("🔹 Player ID from Token:", playerId);
+    console.log("🔹 Match ID:", matchId);
 
     // Validation
+    if (!playerId) {
+        throw new ApiError(401, "Authentication failed. Please login again.");
+    }
     if (!matchId) {
         throw new ApiError(400, "Match ID is required");
     }
@@ -1031,16 +685,20 @@ const uploadLeaderboard = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Total Kills and Points are required");
     }
 
-    // Handle screenshot
+    // Screenshot
     let screenshotUrl = "";
     const screenshotLocalPath = req.files?.screenshot?.[0]?.path;
 
     if (screenshotLocalPath) {
-        const screenshot = await uploadOnCloudinary(screenshotLocalPath);
-        screenshotUrl = screenshot?.url || "";
+        try {
+            const screenshot = await uploadOnCloudinary(screenshotLocalPath);
+            screenshotUrl = screenshot?.url || "";
+        } catch (err) {
+            console.error("Cloudinary Error:", err);
+        }
     }
 
-    // Find tournament that contains this match
+    // Find Tournament
     const tournament = await Tournament.findOne({
         "rounds.matches._id": matchId
     });
@@ -1049,40 +707,52 @@ const uploadLeaderboard = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Match not found");
     }
 
-    let matchUpdated = false;
+    let leaderboardUpdated = false;
 
-    // Loop through rounds and matches to find the correct one
+    // Nested Loop to find correct match and player
     for (let round of tournament.rounds) {
-        const matchIndex = round.matches.findIndex(m => m._id.toString() === matchId);
+        const matchIndex = round.matches.findIndex(m => 
+            m._id && m._id.toString() === matchId.toString()
+        );
 
         if (matchIndex !== -1) {
             const match = round.matches[matchIndex];
 
-            // Check if player is part of this match
-            const playerIndex = match.players.findIndex(
-                p => p.player.toString() === playerId.toString()
-            );
+            // Search in players -> members -> playerId
+            let playerFound = false;
 
-            if (playerIndex === -1) {
-                throw new ApiError(403, "You are not authorized for this match");
+            for (let team of match.players) {
+                const memberIndex = team.members?.findIndex(member => {
+                    if (!member || !member.playerId) return false;
+                    return member.playerId.toString() === playerId.toString();
+                });
+
+                if (memberIndex !== -1) {
+                    // Found the player inside team members
+                    if (!team.leaderboard) {
+                        team.leaderboard = {};
+                    }
+
+                    team.leaderboard = {
+                        totalKills: parseInt(totalKills),
+                        points: parseInt(points),
+                        rank: rank ? parseInt(rank) : null,
+                        screenshot: screenshotUrl,
+                        submittedAt: new Date()
+                    };
+
+                    leaderboardUpdated = true;
+                    playerFound = true;
+                    break;
+                }
             }
 
-            // Update leaderboard data
-            match.players[playerIndex].leaderboard = {
-                totalKills: parseInt(totalKills),
-                points: parseInt(points),
-                rank: rank ? parseInt(rank) : null,
-                screenshot: screenshotUrl,
-                submittedAt: new Date()
-            };
-
-            matchUpdated = true;
-            break;
+            if (playerFound) break;
         }
     }
 
-    if (!matchUpdated) {
-        throw new ApiError(404, "Match not found in tournament");
+    if (!leaderboardUpdated) {
+        throw new ApiError(403, "You are not part of this match or player not found");
     }
 
     await tournament.save();
