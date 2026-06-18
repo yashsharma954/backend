@@ -621,7 +621,7 @@ const uploadLeaderboard = asyncHandler(async (req, res) => {
         const screenshotLocalPath = req.file?.path;
     
         if (screenshotLocalPath) {
-            banner = await uploadOnCloudinary(screenshotrLocalPath);
+            screenshot = await uploadOnCloudinary(screenshotrLocalPath);
         }
     
     //  let playeravatar;
@@ -665,7 +665,7 @@ const uploadLeaderboard = asyncHandler(async (req, res) => {
         totalKills: parseInt(totalKills),
         points: parseInt(points),
         rank: rank ? parseInt(rank) : null,
-        screenshot: screenshoturl,
+        screenshot: screenshot?.url || "",
         submittedAt: new Date()
     };
 
