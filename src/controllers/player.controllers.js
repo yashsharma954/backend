@@ -612,7 +612,7 @@ const uploadLeaderboard = asyncHandler(async (req, res) => {
     if (screenshotLocalPath) {
         try {
             const screenshot = await uploadOnCloudinary(screenshotLocalPath);
-            screenshotUrl = screenshot?.url || "";
+            screenshot= screenshot?.url || "";
         } catch (err) {
             console.error("Cloudinary Error:", err);
         }
@@ -658,7 +658,7 @@ const uploadLeaderboard = asyncHandler(async (req, res) => {
         totalKills: parseInt(totalKills),
         points: parseInt(points),
         rank: rank ? parseInt(rank) : null,
-        screenshot: screenshotUrl,
+        screenshot: screenshot,
         submittedAt: new Date()
     };
 
