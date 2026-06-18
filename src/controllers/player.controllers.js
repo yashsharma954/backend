@@ -664,6 +664,104 @@ const getMyTournaments = asyncHandler(async (req, res) => {
 //     );
 // });
 
+// const uploadLeaderboard = asyncHandler(async (req, res) => {
+    
+//     const { matchId } = req.params;
+//     const { totalKills, points, rank } = req.body;
+    
+//     const playerId = req.user?._id || req.user?.id;
+
+//     console.log("🔹 Player ID from Token:", playerId);
+//     console.log("🔹 Match ID:", matchId);
+
+//     // Validation
+//     if (!playerId) {
+//         throw new ApiError(401, "Authentication failed. Please login again.");
+//     }
+//     if (!matchId) {
+//         throw new ApiError(400, "Match ID is required");
+//     }
+//     if (!totalKills || !points) {
+//         throw new ApiError(400, "Total Kills and Points are required");
+//     }
+
+//     // Screenshot
+//     let screenshotUrl = "";
+//     const screenshotLocalPath = req.files?.screenshot?.[0]?.path;
+
+//     if (screenshotLocalPath) {
+//         try {
+//             const screenshot = await uploadOnCloudinary(screenshotLocalPath);
+//             screenshotUrl = screenshot?.url || "";
+//         } catch (err) {
+//             console.error("Cloudinary Error:", err);
+//         }
+//     }
+
+//     // Find Tournament
+//     const tournament = await Tournament.findOne({
+//         "rounds.matches._id": matchId
+//     });
+
+//     if (!tournament) {
+//         throw new ApiError(404, "Match not found");
+//     }
+
+//     let leaderboardUpdated = false;
+
+//     // Nested Loop to find correct match and player
+//     for (let round of tournament.rounds) {
+//         const matchIndex = round.matches.findIndex(m => 
+//             m._id && m._id.toString() === matchId.toString()
+//         );
+
+//         if (matchIndex !== -1) {
+//             const match = round.matches[matchIndex];
+
+//             // Search in players -> members -> playerId
+//             let playerFound = false;
+
+//             for (let team of match.players) {
+//                 const memberIndex = team.members?.findIndex(member => {
+//                     if (!member || !member.playerId) return false;
+//                     return member.playerId.toString() === playerId.toString();
+//                 });
+
+//                 if (memberIndex !== -1) {
+//                     // Found the player inside team members
+//                     if (!team.leaderboard) {
+//                         team.leaderboard = {};
+//                     }
+
+//                     team.leaderboard = {
+//                         totalKills: parseInt(totalKills),
+//                         points: parseInt(points),
+//                         rank: rank ? parseInt(rank) : null,
+//                         screenshot: screenshotUrl,
+//                         submittedAt: new Date()
+//                     };
+
+//                     leaderboardUpdated = true;
+//                     playerFound = true;
+//                     break;
+//                 }
+//             }
+
+//             if (playerFound) break;
+//         }
+//     }
+
+//     if (!leaderboardUpdated) {
+//         throw new ApiError(403, "You are not part of this match or player not found");
+//     }
+
+//     await tournament.save();
+
+//     return res.status(200).json(
+//         new ApiResponse(200, null, "Leaderboard uploaded successfully")
+//     );
+// });
+
 const uploadLeaderboard = asyncHandler(async (req, res) => {
     
     const { matchId } = req.params;
@@ -674,7 +772,6 @@ const uploadLeaderboard = asyncHandler(async (req, res) => {
     console.log("🔹 Player ID from Token:", playerId);
     console.log("🔹 Match ID:", matchId);
 
-    // Validation
     if (!playerId) {
         throw new ApiError(401, "Authentication failed. Please login again.");
     }
@@ -685,7 +782,7 @@ const uploadLeaderboard = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Total Kills and Points are required");
     }
 
-    // Screenshot
+    // Screenshot Upload
     let screenshotUrl = "";
     const screenshotLocalPath = req.files?.screenshot?.[0]?.path;
 
@@ -709,7 +806,7 @@ const uploadLeaderboard = asyncHandler(async (req, res) => {
 
     let leaderboardUpdated = false;
 
-    // Nested Loop to find correct match and player
+    // Nested Loop
     for (let round of tournament.rounds) {
         const matchIndex = round.matches.findIndex(m => 
             m._id && m._id.toString() === matchId.toString()
@@ -718,41 +815,49 @@ const uploadLeaderboard = asyncHandler(async (req, res) => {
         if (matchIndex !== -1) {
             const match = round.matches[matchIndex];
 
-            // Search in players -> members -> playerId
-            let playerFound = false;
+            // Check if player exists in this match
+            const playerInMatch = match.players?.some(team => 
+                team.members?.some(member => 
+                    member.playerId?.toString() === playerId.toString()
+                )
+            );
 
-            for (let team of match.players) {
-                const memberIndex = team.members?.findIndex(member => {
-                    if (!member || !member.playerId) return false;
-                    return member.playerId.toString() === playerId.toString();
-                });
-
-                if (memberIndex !== -1) {
-                    // Found the player inside team members
-                    if (!team.leaderboard) {
-                        team.leaderboard = {};
-                    }
-
-                    team.leaderboard = {
-                        totalKills: parseInt(totalKills),
-                        points: parseInt(points),
-                        rank: rank ? parseInt(rank) : null,
-                        screenshot: screenshotUrl,
-                        submittedAt: new Date()
-                    };
-
-                    leaderboardUpdated = true;
-                    playerFound = true;
-                    break;
-                }
+            if (!playerInMatch) {
+                throw new ApiError(403, "You are not part of this match");
             }
 
-            if (playerFound) break;
+            // ✅ Leaderboard match level pe array mein push karo
+            if (!match.leaderboard) {
+                match.leaderboard = [];
+            }
+
+            // Agar pehle se same player ka entry hai to update karo
+            const existingEntryIndex = match.leaderboard.findIndex(entry => 
+                entry.playerId?.toString() === playerId.toString()
+            );
+
+            const leaderboardData = {
+                playerId: playerId,
+                totalKills: parseInt(totalKills),
+                points: parseInt(points),
+                rank: rank ? parseInt(rank) : null,
+                screenshot: screenshotUrl,
+                submittedAt: new Date()
+            };
+
+            if (existingEntryIndex !== -1) {
+                match.leaderboard[existingEntryIndex] = leaderboardData;
+            } else {
+                match.leaderboard.push(leaderboardData);
+            }
+
+            leaderboardUpdated = true;
+            break;
         }
     }
 
     if (!leaderboardUpdated) {
-        throw new ApiError(403, "You are not part of this match or player not found");
+        throw new ApiError(404, "Match not found");
     }
 
     await tournament.save();
