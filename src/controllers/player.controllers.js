@@ -937,16 +937,29 @@ const uploadLeaderboard = asyncHandler(async (req, res) => {
     }
 
     // ✅ Correct Player Authorization Check
-    const isPlayerInMatch = targetMatch.players?.some(refId => {
-        return tournament.players?.some(team => {
-            return team._id?.toString() === refId?.toString() &&
-                   team.members?.some(member => 
-                       member.playerId?.toString() === playerId.toString()
-                   );
-        });
-    });
+    // const isPlayerInMatch = targetMatch.players?.some(refId => {
+    //     return tournament.players?.some(team => {
+    //         return team._id?.toString() === refId?.toString() &&
+    //                team.members?.some(member => 
+    //                    member.playerId?.toString() === playerId.toString()
+    //                );
+    //     });
+    // });
+    const playerInMatch = targetMatch.players?.some(playerRef => {
+    // playerRef is ObjectId (from match.players array)
+    const playerRefStr = playerRef.toString();
 
-    if (!isPlayerInMatch) {
+    // Ab tournament.players array mein jaake check karo
+    return tournament.players?.some(fullTeam => {
+        return fullTeam.members?.some(member => 
+            member.playerId?.toString() === playerId.toString() &&
+            (fullTeam._id?.toString() === playerRefStr || 
+             fullTeam.player?._id?.toString() === playerRefStr)
+        );
+    });
+});
+
+    if (!PlayerInMatch) {
         throw new ApiError(403, "You are not part of this match");
     }
 
