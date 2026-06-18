@@ -959,7 +959,7 @@ const uploadLeaderboard = asyncHandler(async (req, res) => {
     });
 });
 
-    if (!PlayerInMatch) {
+    if (!playerInMatch) {
         throw new ApiError(403, "You are not part of this match");
     }
 
