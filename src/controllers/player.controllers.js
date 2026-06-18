@@ -816,12 +816,25 @@ const uploadLeaderboard = asyncHandler(async (req, res) => {
             const match = round.matches[matchIndex];
 
             // Check if player exists in this match
-            const playerInMatch = match.players?.some(team => 
-                team.members?.some(member => 
-                    member.playerId?.toString() === playerId.toString()
-                )
-            );
+            // const playerInMatch = match.players?.some(players => 
+            //     players.members?.some(member => 
+            //         member.playerId?.toString() === playerId.toString()
+            //     )
+            // );
 
+            const playerInMatch = targetMatch.players?.some(playerRef => {
+    // playerRef is ObjectId (from match.players array)
+    const playerRefStr = playerRef.toString();
+
+    // Ab tournament.players array mein jaake check karo
+    return tournament.players?.some(fullTeam => {
+        return fullTeam.members?.some(member => 
+            member.playerId?.toString() === playerId.toString() &&
+            (fullTeam._id?.toString() === playerRefStr || 
+             fullTeam.player?._id?.toString() === playerRefStr)
+        );
+    });
+});
             if (!playerInMatch) {
                 throw new ApiError(403, "You are not part of this match");
             }
