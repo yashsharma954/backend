@@ -621,7 +621,7 @@ const uploadLeaderboard = asyncHandler(async (req, res) => {
         const screenshotLocalPath = req.file?.path;
     
         if (screenshotLocalPath) {
-            screenshot = await uploadOnCloudinary(screenshotrLocalPath);
+            screenshot = await uploadOnCloudinary(screenshotLocalPath);
         }
     
     //  let playeravatar;
