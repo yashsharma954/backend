@@ -606,13 +606,13 @@ const uploadLeaderboard = asyncHandler(async (req, res) => {
     if (!totalKills || !points) throw new ApiError(400, "Total Kills and Points are required");
 
     // Screenshot Upload
-    let screenshot;
+    let screenshoturl;
     const screenshotLocalPath = req.files?.screenshot?.[0]?.path;
 
     if (screenshotLocalPath) {
         try {
             const screenshot = await uploadOnCloudinary(screenshotLocalPath);
-            screenshot= screenshot?.url || "";
+            screenshoturl= screenshot?.url || "";
         } catch (err) {
             console.error("Cloudinary Error:", err);
         }
@@ -658,7 +658,7 @@ const uploadLeaderboard = asyncHandler(async (req, res) => {
         totalKills: parseInt(totalKills),
         points: parseInt(points),
         rank: rank ? parseInt(rank) : null,
-        screenshot: screenshot,
+        screenshot: screenshoturl,
         submittedAt: new Date()
     };
 
