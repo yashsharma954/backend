@@ -606,17 +606,24 @@ const uploadLeaderboard = asyncHandler(async (req, res) => {
     if (!totalKills || !points) throw new ApiError(400, "Total Kills and Points are required");
 
     // Screenshot Upload
-    let screenshoturl;
-    const screenshotLocalPath = req.files?.screenshot?.[0]?.path;
+    // let screenshoturl;
+    // const screenshotLocalPath = req.files?.screenshot?.[0]?.path;
 
-    if (screenshotLocalPath) {
-        try {
-            const screenshot = await uploadOnCloudinary(screenshotLocalPath);
-            screenshoturl= screenshot?.url || "";
-        } catch (err) {
-            console.error("Cloudinary Error:", err);
+    // if (screenshotLocalPath) {
+    //     try {
+    //         const screenshot = await uploadOnCloudinary(screenshotLocalPath);
+    //         screenshoturl= screenshot?.url || "";
+    //     } catch (err) {
+    //         console.error("Cloudinary Error:", err);
+    //     }
+    // }
+     let screenshot = { url: "" };
+        const screenshotLocalPath = req.file?.path;
+    
+        if (screenshotLocalPath) {
+            banner = await uploadOnCloudinary(screenshotrLocalPath);
         }
-    }
+    
     //  let playeravatar;
     // const avatarLocalPath = req.files?.playeravatar?.[0]?.path;
     // console.log("avatarLocalpath is ",avatarLocalPath);
