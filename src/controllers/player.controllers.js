@@ -591,41 +591,135 @@ const getMyTournaments = asyncHandler(async (req, res) => {
 });
 
 
+// const uploadLeaderboard = asyncHandler(async (req, res) => {
+    
+//     const { matchId } = req.params;
+//     const { totalKills, points, rank } = req.body;
+//     const playerId = req.user?._id || req.user?.id;
+
+//     console.log("🔹 Player ID:", playerId);
+//     console.log("🔹 Match ID:", matchId);
+//     console.log("=== UPLOAD LEADERBOARD API CALLED ===");
+// console.log("Request Body:", req.body);
+// console.log("Request Files:", req.files);
+
+//     // Basic Validation
+//     if (!playerId) throw new ApiError(401, "Authentication failed");
+//     if (!matchId) throw new ApiError(400, "Match ID is required");
+//     if (!totalKills || !points) throw new ApiError(400, "Total Kills and Points are required");
+   
+
+//     let screenshot;
+//     const screenshotLocalPath = req.files?.screenshot?.[0]?.path;;
+
+//     console.log("📸 Screenshot Local Path:", screenshotLocalPath);
+
+//     if(screenshotLocalPath){
+//         screenshot=await uploadOnCloudinary(screenshotLocalPath);
+//         console.log("screenshot is ",screenshot.url);
+//     }
+//     // Find Tournament
+//     const tournament = await Tournament.findOne({
+//         "rounds.matches._id": matchId
+//     });
+
+//     if (!tournament) {
+//         throw new ApiError(404, "Match not found");
+//     }
+
+//     // Find Specific Match
+//     let targetMatch = null;
+//     for (let round of tournament.rounds) {
+//         targetMatch = round.matches.find(m => 
+//             m._id && m._id.toString() === matchId.toString()
+//         );
+//         if (targetMatch) break;
+//     }
+
+//     if (!targetMatch) {
+//         throw new ApiError(404, "Match not found");
+//     }
+
+//     // ✅ Direct Leaderboard Upload (No Validation)
+//     if (!targetMatch.leaderboard) {
+//         targetMatch.leaderboard = [];
+//     }
+
+//     const leaderboardEntry = {
+//         playerId: playerId,
+//         totalKills: parseInt(totalKills),
+//         points: parseInt(points),
+//         rank: rank ? parseInt(rank) : null,
+//         screenshot: screenshot?.url || "",
+//         submittedAt: new Date()
+//     };
+
+//     // Agar pehle se entry hai to update, nahi to naya push
+//     const existingIndex = targetMatch.leaderboard.findIndex(
+//         entry => entry.playerId?.toString() === playerId.toString()
+//     );
+
+//     if (existingIndex !== -1) {
+//         targetMatch.leaderboard[existingIndex] = leaderboardEntry;
+//     } else {
+//         targetMatch.leaderboard.push(leaderboardEntry);
+//     }
+
+//     await tournament.save();
+
+//     console.log("✅ Leaderboard Updated Successfully for Match:", matchId);
+
+//     return res.status(200).json(
+//         new ApiResponse(200, null, "Leaderboard uploaded successfully")
+//     );
+// });
+
 const uploadLeaderboard = asyncHandler(async (req, res) => {
     
     const { matchId } = req.params;
     const { totalKills, points, rank } = req.body;
     const playerId = req.user?._id || req.user?.id;
 
+    console.log("=== UPLOAD LEADERBOARD API CALLED ===");
     console.log("🔹 Player ID:", playerId);
     console.log("🔹 Match ID:", matchId);
-    console.log("=== UPLOAD LEADERBOARD API CALLED ===");
-console.log("Request Body:", req.body);
-console.log("Request Files:", req.files);
+    console.log("🔹 Request Files:", req.files);
 
     // Basic Validation
     if (!playerId) throw new ApiError(401, "Authentication failed");
     if (!matchId) throw new ApiError(400, "Match ID is required");
     if (!totalKills || !points) throw new ApiError(400, "Total Kills and Points are required");
-   
 
-    let screenshot;
-    const screenshotLocalPath = req.files?.screenshot?.[0]?.path;;
+    // ================== SCREENSHOT UPLOAD ==================
+    let screenshotUrl = "";
+    const screenshotLocalPath = req.files?.screenshot?.[0]?.path;
 
     console.log("📸 Screenshot Local Path:", screenshotLocalPath);
 
-    if(screenshotLocalPath){
-        screenshot=await uploadOnCloudinary(screenshotLocalPath);
-        console.log("screenshot is ",screenshot.url);
+    if (screenshotLocalPath) {
+        try {
+            console.log("⏳ Uploading to Cloudinary...");
+            const screenshot = await uploadOnCloudinary(screenshotLocalPath);
+            
+            console.log("✅ Cloudinary Response:", screenshot);
+            screenshotUrl = screenshot?.url || screenshot?.secure_url || "";
+            
+            console.log("✅ Final Screenshot URL:", screenshotUrl);
+        } catch (err) {
+            console.error("❌ Cloudinary Upload Failed:", err.message);
+            console.error(err);
+            // Continue without failing the whole request
+        }
+    } else {
+        console.log("⚠️ No screenshot file found");
     }
+
     // Find Tournament
     const tournament = await Tournament.findOne({
         "rounds.matches._id": matchId
     });
 
-    if (!tournament) {
-        throw new ApiError(404, "Match not found");
-    }
+    if (!tournament) throw new ApiError(404, "Match not found");
 
     // Find Specific Match
     let targetMatch = null;
@@ -636,25 +730,20 @@ console.log("Request Files:", req.files);
         if (targetMatch) break;
     }
 
-    if (!targetMatch) {
-        throw new ApiError(404, "Match not found");
-    }
+    if (!targetMatch) throw new ApiError(404, "Match not found");
 
-    // ✅ Direct Leaderboard Upload (No Validation)
-    if (!targetMatch.leaderboard) {
-        targetMatch.leaderboard = [];
-    }
+    // Save Leaderboard
+    if (!targetMatch.leaderboard) targetMatch.leaderboard = [];
 
     const leaderboardEntry = {
         playerId: playerId,
         totalKills: parseInt(totalKills),
         points: parseInt(points),
         rank: rank ? parseInt(rank) : null,
-        screenshot: screenshot?.url || "",
+        screenshot: screenshotUrl,
         submittedAt: new Date()
     };
 
-    // Agar pehle se entry hai to update, nahi to naya push
     const existingIndex = targetMatch.leaderboard.findIndex(
         entry => entry.playerId?.toString() === playerId.toString()
     );
@@ -667,10 +756,10 @@ console.log("Request Files:", req.files);
 
     await tournament.save();
 
-    console.log("✅ Leaderboard Updated Successfully for Match:", matchId);
+    console.log("✅ Leaderboard Saved Successfully!");
 
     return res.status(200).json(
-        new ApiResponse(200, null, "Leaderboard uploaded successfully")
+        new ApiResponse(200, { screenshotUrl }, "Leaderboard uploaded successfully")
     );
 });
   // ya jo bhi export style hai
