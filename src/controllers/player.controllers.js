@@ -604,14 +604,7 @@ const uploadLeaderboard = asyncHandler(async (req, res) => {
     if (!playerId) throw new ApiError(401, "Authentication failed");
     if (!matchId) throw new ApiError(400, "Match ID is required");
     if (!totalKills || !points) throw new ApiError(400, "Total Kills and Points are required");
-    //  let screenshot = { url: "" };
-    //     const screenshotLocalPath = req.file?.path;
-    //      console.log("screenshotLocalpath is ",screenshotLocalPath);
-    
-    //     if (screenshotLocalPath) {
-    //         screenshot = await uploadOnCloudinary(screenshotLocalPath);
-    //         console.log("avatar is ",screenshot.url);
-    //     }
+   
 
     let screenshot;
     const screenshotLocalPath = req.files?.screenshot?.[0]?.path;;
