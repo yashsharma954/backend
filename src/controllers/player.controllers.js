@@ -613,22 +613,14 @@ const uploadLeaderboard = asyncHandler(async (req, res) => {
     //         console.log("avatar is ",screenshot.url);
     //     }
 
-    let screenshotUrl = "";
-    const screenshotLocalPath = req.file?.path;
+    let screenshot;
+    const screenshotLocalPath = req.files?.screenshot?.[0]?.path;;
 
     console.log("📸 Screenshot Local Path:", screenshotLocalPath);
 
-    if (screenshotLocalPath) {
-        try {
-            const screenshot = await uploadOnCloudinary(screenshotLocalPath);
-            screenshotUrl = screenshot?.url || "";
-            console.log("✅ Cloudinary Upload Success:", screenshotUrl);
-        } catch (err) {
-            console.error("❌ Cloudinary Error:", err);
-            // Continue without screenshot instead of failing
-        }
-    } else {
-        console.log("⚠️ No screenshot file received");
+    if(screenshotLocalPath){
+        screenshot=await uploadOnCloudinary(screenshotLocalPath);
+        console.log("screenshot is ",screenshot.url);
     }
     // Find Tournament
     const tournament = await Tournament.findOne({
@@ -662,7 +654,7 @@ const uploadLeaderboard = asyncHandler(async (req, res) => {
         totalKills: parseInt(totalKills),
         points: parseInt(points),
         rank: rank ? parseInt(rank) : null,
-        screenshot: screenshotUrl,
+        screenshot: screenshot?.url || "",
         submittedAt: new Date()
     };
 

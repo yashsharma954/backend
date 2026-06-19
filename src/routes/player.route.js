@@ -41,7 +41,12 @@ router.route("/registerplayer").post(
    router.route("/loginplayer").post(loginplayer); 
    router.route("/logoutplayer").post(verifyJWT,logoutplayer);
    router.route("/match/:matchId/leaderboard").post(verifyPlayerJWT,
-    upload.single("screenshot"),
+    upload.fields([
+        {
+            name:"screenshot",
+            maxCount:1
+        },
+    ]),
  uploadLeaderboard
    );
 
