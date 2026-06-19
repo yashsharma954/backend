@@ -619,9 +619,11 @@ const uploadLeaderboard = asyncHandler(async (req, res) => {
     // }
      let screenshot = { url: "" };
         const screenshotLocalPath = req.file?.path;
+         console.log("screenshotLocalpath is ",screenshotLocalPath);
     
         if (screenshotLocalPath) {
             screenshot = await uploadOnCloudinary(screenshotLocalPath);
+            console.log("avatar is ",screenshot.url);
         }
     
     //  let playeravatar;
