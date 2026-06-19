@@ -604,37 +604,32 @@ const uploadLeaderboard = asyncHandler(async (req, res) => {
     if (!playerId) throw new ApiError(401, "Authentication failed");
     if (!matchId) throw new ApiError(400, "Match ID is required");
     if (!totalKills || !points) throw new ApiError(400, "Total Kills and Points are required");
-
-    // Screenshot Upload
-    // let screenshoturl;
-    // const screenshotLocalPath = req.files?.screenshot?.[0]?.path;
-
-    // if (screenshotLocalPath) {
-    //     try {
-    //         const screenshot = await uploadOnCloudinary(screenshotLocalPath);
-    //         screenshoturl= screenshot?.url || "";
-    //     } catch (err) {
-    //         console.error("Cloudinary Error:", err);
+    //  let screenshot = { url: "" };
+    //     const screenshotLocalPath = req.file?.path;
+    //      console.log("screenshotLocalpath is ",screenshotLocalPath);
+    
+    //     if (screenshotLocalPath) {
+    //         screenshot = await uploadOnCloudinary(screenshotLocalPath);
+    //         console.log("avatar is ",screenshot.url);
     //     }
-    // }
-     let screenshot = { url: "" };
-        const screenshotLocalPath = req.file?.path;
-         console.log("screenshotLocalpath is ",screenshotLocalPath);
-    
-        if (screenshotLocalPath) {
-            screenshot = await uploadOnCloudinary(screenshotLocalPath);
-            console.log("avatar is ",screenshot.url);
+
+    let screenshotUrl = "";
+    const screenshotLocalPath = req.file?.path;
+
+    console.log("📸 Screenshot Local Path:", screenshotLocalPath);
+
+    if (screenshotLocalPath) {
+        try {
+            const screenshot = await uploadOnCloudinary(screenshotLocalPath);
+            screenshotUrl = screenshot?.url || "";
+            console.log("✅ Cloudinary Upload Success:", screenshotUrl);
+        } catch (err) {
+            console.error("❌ Cloudinary Error:", err);
+            // Continue without screenshot instead of failing
         }
-    
-    //  let playeravatar;
-    // const avatarLocalPath = req.files?.playeravatar?.[0]?.path;
-    // console.log("avatarLocalpath is ",avatarLocalPath);
-
-    //    if (avatarLocalPath) {
-    //       playeravatar = await uploadOnCloudinary(avatarLocalPath)
-    //       console.log("avatar is ",playeravatar.url);
-    //    }
-
+    } else {
+        console.log("⚠️ No screenshot file received");
+    }
     // Find Tournament
     const tournament = await Tournament.findOne({
         "rounds.matches._id": matchId
@@ -667,7 +662,7 @@ const uploadLeaderboard = asyncHandler(async (req, res) => {
         totalKills: parseInt(totalKills),
         points: parseInt(points),
         rank: rank ? parseInt(rank) : null,
-        screenshot: screenshot?.url || "",
+        screenshot: screenshotUrl,
         submittedAt: new Date()
     };
 
