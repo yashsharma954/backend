@@ -599,6 +599,9 @@ const uploadLeaderboard = asyncHandler(async (req, res) => {
 
     console.log("🔹 Player ID:", playerId);
     console.log("🔹 Match ID:", matchId);
+    console.log("=== UPLOAD LEADERBOARD API CALLED ===");
+console.log("Request Body:", req.body);
+console.log("Request Files:", req.files);
 
     // Basic Validation
     if (!playerId) throw new ApiError(401, "Authentication failed");
