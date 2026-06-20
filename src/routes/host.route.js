@@ -21,6 +21,7 @@ import { getRoundDetails } from "../controllers/host.controllers.js";
 import { getMatchDetails } from "../controllers/host.controllers.js";
 import { startMatch } from "../controllers/host.controllers.js";
 import { updateMatchRoomDetails } from "../controllers/host.controllers.js";
+import { getMatchLeaderboard } from "../controllers/host.controllers.js";
 
 
 const router=Router();
@@ -69,6 +70,7 @@ router.route("/tournaments/:tournamentId/round/:roundNumber/match/:matchId/start
 router.route(
   '/tournaments/:tournamentId/round/:roundNumber/match/:matchId/room')
             .patch(updateMatchRoomDetails);
+router.route('/match/:matchId/leaderboard').get(getMatchLeaderboard);
 
 
 

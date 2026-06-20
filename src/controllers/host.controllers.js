@@ -1230,6 +1230,84 @@ const updateMatchRoomDetails = asyncHandler(async (req, res) => {
         )
     );
 });
+const getMatchLeaderboard = asyncHandler(async (req, res) => {
+    
+    const { matchId } = req.params;
+
+    console.log("=== GET MATCH LEADERBOARD API CALLED ===");
+    console.log("🔹 Match ID:", matchId);
+
+    // ================== VALIDATION ==================
+    if (!matchId) {
+        throw new ApiError(400, "Match ID is required");
+    }
+
+    // ================== FIND TOURNAMENT & MATCH ==================
+    const tournament = await Tournament.findOne({
+        "rounds.matches._id": matchId
+    }).populate({
+        path: "rounds.matches.leaderboard.playerId",
+        select: "name username avatar"   // Player details
+    });
+
+    if (!tournament) {
+        throw new ApiError(404, "Tournament not found");
+    }
+
+    // Find specific match
+    let targetMatch = null;
+    let roundNumber = null;
+
+    for (let round of tournament.rounds) {
+        targetMatch = round.matches.find(m => 
+            m._id && m._id.toString() === matchId.toString()
+        );
+        if (targetMatch) {
+            roundNumber = round.roundNumber || round.name;
+            break;
+        }
+    }
+
+    if (!targetMatch) {
+        throw new ApiError(404, "Match not found");
+    }
+
+    console.log(`✅ Match Found in Round ${roundNumber}`);
+
+    // ================== FORMAT LEADERBOARD ==================
+    const formattedLeaderboard = targetMatch.leaderboard
+        .map(entry => ({
+            _id: entry._id,
+            playerId: entry.playerId?._id || entry.playerId,
+            playerName: entry.playerId?.name || entry.playerId?.username || "Unknown Player",
+            playerAvatar: entry.playerId?.avatar || null,
+            totalKills: entry.totalKills || 0,
+            points: entry.points || 0,
+            rank: entry.rank || 0,
+            screenshot: entry.screenshot || null,
+            status: entry.status || "pending",
+            submittedAt: entry.submittedAt
+        }))
+        // Sort by points (highest first), then by kills
+        .sort((a, b) => {
+            if (b.points !== a.points) return b.points - a.points;
+            return b.totalKills - a.totalKills;
+        });
+
+    console.log(`✅ Leaderboard Fetched - ${formattedLeaderboard.length} entries`);
+
+    // Final Response
+    return res.status(200).json(
+        new ApiResponse(200, {
+            leaderboard: formattedLeaderboard,
+            matchId: matchId,
+            roundNumber: roundNumber,
+            totalSubmissions: formattedLeaderboard.length,
+            matchStatus: targetMatch.status || "live"
+        }, "Match leaderboard fetched successfully")
+    );
+
+});
 
 
 export {logouthost};
@@ -1252,3 +1330,4 @@ export { getRoundDetails };
 export { getMatchDetails };
 export {startMatch};
 export {updateMatchRoomDetails};
+export {getMatchLeaderboard}
