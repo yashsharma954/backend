@@ -1393,6 +1393,81 @@ const getMatchLeaderboard = asyncHandler(async (req, res) => {
     );
 
 });
+// POST /match/:matchId/advance
+const advanceTeams = asyncHandler(async (req, res) => {
+    
+    const { matchId } = req.params;
+    const { advancingPlayers } = req.body;   // array of playerIds
+
+    console.log("=== ADVANCE TEAMS API CALLED ===");
+    console.log("🔹 Match ID:", matchId);
+    console.log("🔹 Advancing Players:", advancingPlayers);
+
+    if (!matchId) throw new ApiError(400, "Match ID is required");
+    if (!advancingPlayers || !Array.isArray(advancingPlayers) || advancingPlayers.length === 0) {
+        throw new ApiError(400, "Advancing players array is required");
+    }
+
+    // Find Tournament
+    const tournament = await Tournament.findOne({
+        "rounds.matches._id": matchId
+    });
+
+    if (!tournament) throw new ApiError(404, "Tournament not found");
+
+    // Find specific match
+    let targetMatch = null;
+    let targetRound = null;
+
+    for (let round of tournament.rounds) {
+        targetMatch = round.matches.find(m => 
+            m._id && m._id.toString() === matchId.toString()
+        );
+        if (targetMatch) {
+            targetRound = round;
+            break;
+        }
+    }
+
+    if (!targetMatch) throw new ApiError(404, "Match not found");
+
+    // Initialize qualifiedTeams if not exists
+    if (!targetMatch.qualifiedTeams) {
+        targetMatch.qualifiedTeams = [];
+    }
+
+    let newlyAdded = 0;
+
+    // Add players to qualifiedTeams (unique)
+    advancingPlayers.forEach(playerId => {
+        if (playerId && !targetMatch.qualifiedTeams.some(id => id.toString() === playerId.toString())) {
+            targetMatch.qualifiedTeams.push(playerId);
+            newlyAdded++;
+        }
+    });
+
+    // Optional: Update status of leaderboard entries to "approved"
+    if (targetMatch.leaderboard) {
+        targetMatch.leaderboard.forEach(entry => {
+            if (advancingPlayers.some(id => id.toString() === entry.playerId?.toString())) {
+                entry.status = "approved";
+            }
+        });
+    }
+
+    await tournament.save();
+
+    console.log(`✅ ${newlyAdded} players added to qualifiedTeams`);
+
+    return res.status(200).json(
+        new ApiResponse(200, {
+            qualifiedTeams: targetMatch.qualifiedTeams,
+            count: newlyAdded
+        }, "Teams advanced successfully to next round")
+    );
+});
+
+
 
 
 export {logouthost};
@@ -1415,4 +1490,5 @@ export { getRoundDetails };
 export { getMatchDetails };
 export {startMatch};
 export {updateMatchRoomDetails};
-export {getMatchLeaderboard}
+export {getMatchLeaderboard};
+export {advanceTeams};
