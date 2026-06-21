@@ -23,6 +23,7 @@ import { startMatch } from "../controllers/host.controllers.js";
 import { updateMatchRoomDetails } from "../controllers/host.controllers.js";
 import { getMatchLeaderboard } from "../controllers/host.controllers.js";
 import { advanceTeams } from "../controllers/host.controllers.js";
+import { getQualifiedTeams } from "../controllers/host.controllers.js";
 
 
 const router=Router();
@@ -73,6 +74,7 @@ router.route(
             .patch(updateMatchRoomDetails);
 router.route('/match/:matchId/leaderboard').get(getMatchLeaderboard);
 router.route('/match/:matchId/advance').post(advanceTeams);
+router.route('/match/:matchId/leaderboard').get(getQualifiedTeams);
 
 
 
