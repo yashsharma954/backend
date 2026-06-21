@@ -234,6 +234,25 @@ matches: [{
   hostId: { type: mongoose.Schema.Types.ObjectId, ref: "Host", required: true },
   banner: { type: String, default: "" },
   streamLink: { type: String, default: "" },
+  
+  leaderboard: [{
+        playerId: { 
+            type: mongoose.Schema.Types.ObjectId, 
+            ref: 'Player' 
+        },
+        teamId: { 
+            type: mongoose.Schema.Types.ObjectId, 
+            ref: 'TournamentTeam' 
+        },
+        rank: { type: Number },
+        points: { type: Number, default: 0 },
+        totalKills: { type: Number, default: 0 },
+        status: { 
+            type: String, 
+            enum: ['qualified', 'winner', 'runnerup'], 
+            default: 'qualified' 
+        }
+    }],
 
   status: {
     type: String,
