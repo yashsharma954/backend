@@ -1956,6 +1956,45 @@ const endRound = asyncHandler(async (req, res) => {
     );
 });
 
+// GET /tournaments/:tournamentId/result
+const getTournamentResult = asyncHandler(async (req, res) => {
+    const { tournamentId } = req.params;
+
+    const tournament = await Tournament.findById(tournamentId)
+        .populate({
+            path: 'leaderboard.playerId',
+            select: 'name username avatar'
+        })
+        .populate({
+            path: 'leaderboard.teamId',
+            select: 'teamName'
+        });
+
+    if (!tournament) throw new ApiError(404, "Tournament not found");
+
+    const formattedLeaderboard = tournament.leaderboard
+        .map((entry, index) => ({
+            playerId: entry.playerId?._id || entry.playerId,
+            playerName: entry.playerId?.name || entry.playerId?.username || "Unknown",
+            playerAvatar: entry.playerId?.avatar || null,
+            teamName: entry.teamId?.teamName || null,
+            rank: entry.rank || index + 1,
+            points: entry.points || 0,
+            totalKills: entry.totalKills || 0,
+            status: entry.status
+        }))
+        .sort((a, b) => a.rank - b.rank);
+
+    return res.status(200).json(
+        new ApiResponse(200, {
+            leaderboard: formattedLeaderboard,
+            tournamentName: tournament.title,
+            totalRounds: tournament.totalRounds,
+            prizePool: tournament.prizePool
+        }, "Tournament results fetched successfully")
+    );
+});
+
 
 
 export {getQualifiedTeams};
@@ -1982,3 +2021,4 @@ export {updateMatchRoomDetails};
 export {getMatchLeaderboard};
 export {advanceTeams};
 export {endRound};
+export {getTournamentResult};

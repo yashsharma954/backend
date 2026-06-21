@@ -25,6 +25,7 @@ import { getMatchLeaderboard } from "../controllers/host.controllers.js";
 import { advanceTeams } from "../controllers/host.controllers.js";
 import { getQualifiedTeams } from "../controllers/host.controllers.js";
 import { endRound } from "../controllers/host.controllers.js";
+import { getTournamentResult } from "../controllers/host.controllers.js";
 
 
 const router=Router();
@@ -77,6 +78,7 @@ router.route('/match/:matchId/leaderboard').get(getMatchLeaderboard);
 router.route('/match/:matchId/advance').post(advanceTeams);
 router.route('/match/:matchId/leaderboard').get(getQualifiedTeams);
 router.route('/tournaments/:tournamentId/round/:roundNumber/end').post(endRound);
+router.route('/tournaments/:tournamentId/result').get(getTournamentResult);
 
 
 
