@@ -1965,10 +1965,7 @@ const getTournamentResult = asyncHandler(async (req, res) => {
             path: 'leaderboard.playerId',
             select: 'name username avatar'
         })
-        .populate({
-            path: 'leaderboard.teamId',
-            select: 'teamName'
-        });
+        
 
     if (!tournament) throw new ApiError(404, "Tournament not found");
 
