@@ -76,7 +76,7 @@ router.route(
 router.route('/match/:matchId/leaderboard').get(getMatchLeaderboard);
 router.route('/match/:matchId/advance').post(advanceTeams);
 router.route('/match/:matchId/leaderboard').get(getQualifiedTeams);
-router.route('/tournaments/:tournamentId/round/:roundnumber/end');
+router.route('/tournaments/:tournamentId/round/:roundNumber/end');
 
 
 
