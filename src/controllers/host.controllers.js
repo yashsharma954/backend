@@ -1561,6 +1561,83 @@ const getQualifiedTeams = asyncHandler(async (req, res) => {
     );
 });
 
+// POST /tournaments/:tournamentId/round/:roundNumber/end
+const endRound = asyncHandler(async (req, res) => {
+    
+    const { tournamentId, roundNumber } = req.params;
+
+    console.log(`=== END ROUND ${roundNumber} ===`);
+
+    const tournament = await Tournament.findById(tournamentId);
+
+    if (!tournament) throw new ApiError(404, "Tournament not found");
+
+    const currentRound = tournament.rounds.find(r => 
+        r.roundNumber.toString() === roundNumber.toString()
+    );
+
+    if (!currentRound) throw new ApiError(404, "Round not found");
+
+    // Collect all qualified players from all matches
+    const allQualified = new Set();
+
+    currentRound.matches.forEach(match => {
+        // From match.qualifiedTeams
+        if (match.qualifiedTeams?.length) {
+            match.qualifiedTeams.forEach(id => allQualified.add(id.toString()));
+        }
+
+        // From leaderboard (approved status)
+        if (match.leaderboard?.length) {
+            match.leaderboard.forEach(entry => {
+                if (entry.status === "approved" && entry.playerId) {
+                    allQualified.add(entry.playerId.toString());
+                }
+            });
+        }
+    });
+
+    const qualifiedPlayerIds = Array.from(allQualified);
+
+    // Update Current Round
+    currentRound.qualifiedTeams = qualifiedPlayerIds;
+    currentRound.status = "completed";
+    currentRound.completedAt = new Date();
+
+    // Prepare Next Round
+    const nextRoundNumber = Number(roundNumber) + 1;
+    let nextRound = tournament.rounds.find(r => r.roundNumber === nextRoundNumber);
+
+    if (!nextRound) {
+        nextRound = {
+            roundNumber: nextRoundNumber,
+            name: `Round ${nextRoundNumber}`,
+            teamsPerMatch: currentRound.teamsPerMatch || 4,
+            totalMatches: Math.ceil(qualifiedPlayerIds.length / (currentRound.teamsPerMatch || 4)),
+            qualifyingTeams: Math.ceil(qualifiedPlayerIds.length * 0.5), // example logic
+            status: "upcoming",
+            players: qualifiedPlayerIds,
+            qualifiedTeams: [],
+            matches: []
+        };
+        tournament.rounds.push(nextRound);
+    } else {
+        nextRound.players = qualifiedPlayerIds;
+        nextRound.qualifiedTeams = []; // reset for next round
+    }
+
+    await tournament.save();
+
+    return res.status(200).json(
+        new ApiResponse(200, {
+            roundNumber: Number(roundNumber),
+            qualifiedCount: qualifiedPlayerIds.length,
+            nextRoundNumber,
+            nextRoundPlayers: qualifiedPlayerIds.length
+        }, `Round ${roundNumber} ended successfully! ${qualifiedPlayerIds.length} players advanced.`)
+    );
+});
+
 
 
 export {getQualifiedTeams};
@@ -1586,3 +1663,4 @@ export {startMatch};
 export {updateMatchRoomDetails};
 export {getMatchLeaderboard};
 export {advanceTeams};
+export {endRound};

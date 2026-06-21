@@ -151,6 +151,11 @@ const tournamentSchema = new mongoose.Schema({
       },
       startedAt: Date,
       completedAt: Date,
+      
+      qualifiedTeams: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Player'
+    }],
 
       
       players: [
@@ -177,25 +182,7 @@ const tournamentSchema = new mongoose.Schema({
       totalPoints: { type: Number, default: 0 }
     }
   ],
-  // Inside rounds array
-// matches: [
-//   {
-//     matchNumber: Number,
-//     status: { type: String, enum: ["upcoming", "live", "completed"] },
-//     roomId: String,
-//     roomPassword: String,
-//     startedAt: Date,
-//     completedAt: Date,
-//     teams: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Player' }], // ya direct player data
-//     result: [{
-//       teamName: String,
-//       rank: Number,
-//       points: Number,
-//       status: { type: String, enum: ["qualified", "eliminated"] }
-//     }]
-//   }
-// ]
-
+ 
 matches: [{
     matchId: { type: Number, required: true },
     matchNumber: { type: Number, required: true },        // ← Number rakho
